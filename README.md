@@ -1,7 +1,8 @@
 <div align="center">
 
 # <a href="https://archerydms.com/" target="_blank" rel="noopener noreferrer">Archery</a>
-<h4> SQL 审核查询平台<h4>
+<h4> SQL 审核查询平台</h4>
+
 
 [![Django CI](https://github.com/hhyo/Archery/actions/workflows/django.yml/badge.svg)](https://github.com/hhyo/Archery/actions/workflows/django.yml)
 [![Release](https://img.shields.io/github/release/hhyo/archery.svg)](https://github.com/hhyo/archery/releases/)
