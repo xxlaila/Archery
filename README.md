@@ -1,4 +1,3 @@
-<div align="center">
 
 # [Archery](https://archerydms.com/)
 
@@ -17,8 +16,6 @@
 [文档](https://archerydms.com/) | [FAQ](https://github.com/hhyo/archery/wiki/FAQ) | [Releases](https://github.com/hhyo/archery/releases/)
 
 ![dashboard](https://github.com/hhyo/Archery/wiki/images/dashboard.png)
-
-</div>
 
 
 功能清单
