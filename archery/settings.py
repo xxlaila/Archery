@@ -21,10 +21,10 @@ env = environ.Env(
     DEBUG=(bool, False),
     ALLOWED_HOSTS=(list, ["*"]),
     SECRET_KEY=(str, "hfusaf2m4ot#7)fkw#di2bu6(cv0@opwmafx5n#6=3d%x^hpl6"),
-    DATABASE_URL=(str, "mysql://root:@127.0.0.1:3306/archery"),
-    CACHE_URL=(str, "redis://127.0.0.1:6379/0"),
+    DATABASE_URL=(str, "mysql://archer_new:arc#flz3k83qcA@10.11.4.97:3306/archer_new"),
+    CACHE_URL=(str, "redis://dwEW9ooIYhjyJrBP@10.11.100.51:6379/5"),
     # 系统外部认证目前支持LDAP、OIDC、DINGDING三种，认证方式只能启用其中一种，如果启用多个，实际生效的只有一个，优先级LDAP > DINGDING > OIDC
-    ENABLE_LDAP=(bool, False),
+    ENABLE_LDAP=(bool, True),
     ENABLE_OIDC=(bool, False),
     ENABLE_DINGDING=(
         bool,
@@ -33,7 +33,7 @@ env = environ.Env(
     AUTH_LDAP_ALWAYS_UPDATE_USER=(bool, True),
     AUTH_LDAP_USER_ATTR_MAP=(
         dict,
-        {"username": "cn", "display": "displayname", "email": "mail"},
+        {"username": "uid", "display": "cn", "email": "mail"},
     ),
     Q_CLUISTER_SYNC=(bool, False),  # qcluster 同步模式, debug 时可以调整为 True
     # CSRF_TRUSTED_ORIGINS=subdomain.example.com,subdomain.example2.com subdomain.example.com
@@ -211,7 +211,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ############### 以下部分需要用户根据自己环境自行修改 ###################
 
 # SESSION 设置
-SESSION_COOKIE_AGE = 60 * 300  # 300分钟
+SESSION_COOKIE_AGE = 60 * 60 * 24  # 300分钟
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # 关闭浏览器，则COOKIE失效
 
@@ -246,7 +246,8 @@ Q_CLUSTER = {
     "queue_limit": 50,
     "label": "Django Q",
     "django_redis": "default",
-    "sync": env("Q_CLUISTER_SYNC"),  # 本地调试可以修改为True，使用同步模式
+    'sync': False  # 本地调试可以修改为True，使用同步模式
+    # "sync": env("Q_CLUISTER_SYNC"),  # 本地调试可以修改为True，使用同步模式
 }
 
 # 缓存配置
@@ -341,7 +342,7 @@ if ENABLE_DINGDING:
     AUTH_DINGDING_APP_SECRET = env("AUTH_DINGDING_APP_SECRET")
 
 # LDAP
-ENABLE_LDAP = env("ENABLE_LDAP", False)
+ENABLE_LDAP = env("ENABLE_LDAP", True)
 if ENABLE_LDAP:
     import ldap
     from django_auth_ldap.config import LDAPSearch
@@ -351,19 +352,19 @@ if ENABLE_LDAP:
         "django.contrib.auth.backends.ModelBackend",  # django系统中手动创建的用户也可使用，优先级靠后。注意这2行的顺序
     )
 
-    AUTH_LDAP_SERVER_URI = env("AUTH_LDAP_SERVER_URI", default="ldap://xxx")
+    AUTH_LDAP_SERVER_URI = env("AUTH_LDAP_SERVER_URI", default="ldap://l.auth.zhenai.com")
     AUTH_LDAP_USER_DN_TEMPLATE = env("AUTH_LDAP_USER_DN_TEMPLATE", default=None)
     if not AUTH_LDAP_USER_DN_TEMPLATE:
         del AUTH_LDAP_USER_DN_TEMPLATE
         AUTH_LDAP_BIND_DN = env(
-            "AUTH_LDAP_BIND_DN", default="cn=xxx,ou=xxx,dc=xxx,dc=xxx"
+            "AUTH_LDAP_BIND_DN", default="CN=ArcherMaster,CN=Users,DC=zhenai,DC=com"
         )
-        AUTH_LDAP_BIND_PASSWORD = env("AUTH_LDAP_BIND_PASSWORD", default="***********")
+        AUTH_LDAP_BIND_PASSWORD = env("AUTH_LDAP_BIND_PASSWORD", default="WOoY4*0f81oE")
         AUTH_LDAP_USER_SEARCH_BASE = env(
-            "AUTH_LDAP_USER_SEARCH_BASE", default="ou=xxx,dc=xxx,dc=xxx"
+            "AUTH_LDAP_USER_SEARCH_BASE", default="OU=深圳市珍爱网信息技术有限公司,DC=zhenai,DC=com"
         )
         AUTH_LDAP_USER_SEARCH_FILTER = env(
-            "AUTH_LDAP_USER_SEARCH_FILTER", default="(cn=%(user)s)"
+            "AUTH_LDAP_USER_SEARCH_FILTER", default="(uid=%(user)s)"
         )
         AUTH_LDAP_USER_SEARCH = LDAPSearch(
             AUTH_LDAP_USER_SEARCH_BASE, ldap.SCOPE_SUBTREE, AUTH_LDAP_USER_SEARCH_FILTER
