@@ -15,8 +15,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+env = environ.Env()
 
 environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+print("DATABASE_URL:", env.str('DATABASE_URL'))
+
 env = environ.Env(
     DEBUG=(bool, False),
     ALLOWED_HOSTS=(list, ["*"]),
@@ -33,7 +36,7 @@ env = environ.Env(
     AUTH_LDAP_ALWAYS_UPDATE_USER=(bool, True),
     AUTH_LDAP_USER_ATTR_MAP=(
         dict,
-        {"username": "cn", "display": "displayname", "email": "mail"},
+        {"username": "uid", "display": "cn", "email": "mail"},
     ),
     Q_CLUISTER_SYNC=(bool, False),  # qcluster 同步模式, debug 时可以调整为 True
     # CSRF_TRUSTED_ORIGINS=subdomain.example.com,subdomain.example2.com subdomain.example.com
@@ -342,7 +345,7 @@ if ENABLE_DINGDING:
     AUTH_DINGDING_APP_SECRET = env("AUTH_DINGDING_APP_SECRET")
 
 # LDAP
-ENABLE_LDAP = env("ENABLE_LDAP", True)
+ENABLE_LDAP = env("ENABLE_LDAP", False)
 if ENABLE_LDAP:
     import ldap
     from django_auth_ldap.config import LDAPSearch
@@ -352,19 +355,19 @@ if ENABLE_LDAP:
         "django.contrib.auth.backends.ModelBackend",  # django系统中手动创建的用户也可使用，优先级靠后。注意这2行的顺序
     )
 
-    AUTH_LDAP_SERVER_URI = env("AUTH_LDAP_SERVER_URI", default="ldap://l.auth.zhenai.com")
+    AUTH_LDAP_SERVER_URI = env("AUTH_LDAP_SERVER_URI", default="ldap://xxx")
     AUTH_LDAP_USER_DN_TEMPLATE = env("AUTH_LDAP_USER_DN_TEMPLATE", default=None)
     if not AUTH_LDAP_USER_DN_TEMPLATE:
         del AUTH_LDAP_USER_DN_TEMPLATE
         AUTH_LDAP_BIND_DN = env(
-            "AUTH_LDAP_BIND_DN", default="CN=ArcherMaster,CN=Users,DC=zhenai,DC=com"
+            "AUTH_LDAP_BIND_DN", default="cn=xxx,ou=xxx,dc=xxx,dc=xxx"
         )
-        AUTH_LDAP_BIND_PASSWORD = env("AUTH_LDAP_BIND_PASSWORD", default="WOoY4*0f81oE")
+        AUTH_LDAP_BIND_PASSWORD = env("AUTH_LDAP_BIND_PASSWORD", default="***********")
         AUTH_LDAP_USER_SEARCH_BASE = env(
-            "AUTH_LDAP_USER_SEARCH_BASE", default="OU=深圳市珍爱网信息技术有限公司,DC=zhenai,DC=com"
+            "AUTH_LDAP_USER_SEARCH_BASE", default="ou=xxx,dc=xxx,dc=xxx"
         )
         AUTH_LDAP_USER_SEARCH_FILTER = env(
-            "AUTH_LDAP_USER_SEARCH_FILTER", default="(uid=%(user)s)"
+            "AUTH_LDAP_USER_SEARCH_FILTER", default="(cn=%(user)s)"
         )
         AUTH_LDAP_USER_SEARCH = LDAPSearch(
             AUTH_LDAP_USER_SEARCH_BASE, ldap.SCOPE_SUBTREE, AUTH_LDAP_USER_SEARCH_FILTER
