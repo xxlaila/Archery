@@ -870,7 +870,7 @@ class Config(models.Model):
 
 # 云服务认证信息配置
 class CloudAccessKey(models.Model):
-    cloud_type_choices = (("aliyun", "aliyun"),)
+    cloud_type_choices = (("aliyun", "aliyun"),("tencentcloud", "tencentcloud"), ("huaweicloud", "huaweicloud"))
 
     type = models.CharField(max_length=20, default="", choices=cloud_type_choices)
     key_id = models.CharField(max_length=200)
@@ -912,9 +912,9 @@ class AliyunRdsConfig(models.Model):
     """
 
     instance = models.OneToOneField(Instance, on_delete=models.CASCADE)
-    rds_dbinstanceid = models.CharField("对应阿里云RDS实例ID", max_length=100)
+    rds_dbinstanceid = models.CharField("对应云RDS实例ID", max_length=100)
     ak = models.ForeignKey(
-        CloudAccessKey, verbose_name="RDS实例对应的AK配置", on_delete=models.CASCADE
+        CloudAccessKey, verbose_name="RDS对应的AK配置", on_delete=models.CASCADE
     )
     is_enable = models.BooleanField("是否启用", default=False)
 
@@ -923,9 +923,9 @@ class AliyunRdsConfig(models.Model):
 
     class Meta:
         managed = True
-        db_table = "aliyun_rds_config"
-        verbose_name = "阿里云rds配置"
-        verbose_name_plural = "阿里云rds配置"
+        db_table = "cloud_rds_config"
+        verbose_name = "云rds配置"
+        verbose_name_plural = "云rds配置"
 
 
 class Permission(models.Model):

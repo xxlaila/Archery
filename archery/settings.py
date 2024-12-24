@@ -21,10 +21,10 @@ env = environ.Env(
     DEBUG=(bool, False),
     ALLOWED_HOSTS=(list, ["*"]),
     SECRET_KEY=(str, "hfusaf2m4ot#7)fkw#di2bu6(cv0@opwmafx5n#6=3d%x^hpl6"),
-    DATABASE_URL=(str, "mysql://archer_new:arc#flz3k83qcA@10.11.4.97:3306/archer_new"),
-    CACHE_URL=(str, "redis://dwEW9ooIYhjyJrBP@10.11.100.51:6379/5"),
+    DATABASE_URL=(str, "mysql://root:@127.0.0.1:3306/archery"),
+    CACHE_URL=(str, "redis://127.0.0.1:6379/0"),
     # 系统外部认证目前支持LDAP、OIDC、DINGDING三种，认证方式只能启用其中一种，如果启用多个，实际生效的只有一个，优先级LDAP > DINGDING > OIDC
-    ENABLE_LDAP=(bool, True),
+    ENABLE_LDAP=(bool, False),
     ENABLE_OIDC=(bool, False),
     ENABLE_DINGDING=(
         bool,
@@ -33,7 +33,7 @@ env = environ.Env(
     AUTH_LDAP_ALWAYS_UPDATE_USER=(bool, True),
     AUTH_LDAP_USER_ATTR_MAP=(
         dict,
-        {"username": "uid", "display": "cn", "email": "mail"},
+        {"username": "cn", "display": "displayname", "email": "mail"},
     ),
     Q_CLUISTER_SYNC=(bool, False),  # qcluster 同步模式, debug 时可以调整为 True
     # CSRF_TRUSTED_ORIGINS=subdomain.example.com,subdomain.example2.com subdomain.example.com
