@@ -11,7 +11,7 @@ from django.views.decorators.cache import cache_page
 from pyecharts.charts import Line
 from pyecharts import options as opts
 from common.utils.chart_dao import ChartDao
-from sql.engines import get_engine
+from sql.engines import get_engine,get_tencent_engine
 
 from sql.utils.resource_group import user_instances
 from common.utils.extend_json_encoder import ExtendJSONEncoder
@@ -41,12 +41,16 @@ def slowquery_review(request):
 
     # 判断是RDS还是其他实例
     instance_info = Instance.objects.get(instance_name=instance_name)
-    if AliyunRdsConfig.objects.filter(instance=instance_info, is_enable=True).exists():
+    if instance_info.cloud == "Aliyun":
+    # if AliyunRdsConfig.objects.filter(instance=instance_info, is_enable=True).exists():
         # 调用阿里云慢日志接口
         query_engine = get_engine(instance=instance_info)
         result = query_engine.slowquery_review(
             start_time, end_time, db_name, limit, offset
         )
+    elif instance_info.cloud == "Tencent":
+        query_engine = get_tencent_engine(instance=instance_info)
+        result = query_engine.process_slow_log_top_sqls_results()
     else:
         limit = offset + limit
         search = request.POST.get("search")
@@ -123,6 +127,7 @@ def slowquery_review_history(request):
     start_time = request.POST.get("StartTime")
     end_time = request.POST.get("EndTime")
     db_name = request.POST.get("db_name")
+    sqltext = request.POST.get("SQLText")
     sql_id = request.POST.get("SQLId")
     limit = int(request.POST.get("limit"))
     offset = int(request.POST.get("offset"))
@@ -135,12 +140,16 @@ def slowquery_review_history(request):
 
     # 判断是RDS还是其他实例
     instance_info = Instance.objects.get(instance_name=instance_name)
-    if AliyunRdsConfig.objects.filter(instance=instance_info, is_enable=True).exists():
+    if instance_info.cloud == "Aliyun":
+    # if AliyunRdsConfig.objects.filter(instance=instance_info, is_enable=True).exists():
         # 调用阿里云慢日志接口
         query_engine = get_engine(instance=instance_info)
         result = query_engine.slowquery_review_history(
             start_time, end_time, db_name, sql_id, limit, offset
         )
+    elif instance_info.cloud == "Tencent":
+        query_engine = get_tencent_engine(instance=instance_info)
+        result = query_engine.process_describe_slow_logs()
     else:
         search = request.POST.get("search")
         sortName = str(request.POST.get("sortName"))
@@ -192,6 +201,7 @@ def slowquery_review_history(request):
             "LockTimes",
             "ParseRowCounts",
             "ReturnRowCounts",
+            "HostAddress"
         )
 
         # QuerySet 序列化

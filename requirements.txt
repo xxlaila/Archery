@@ -37,7 +37,7 @@ pillow==10.3.0
 qrcode==7.3.1
 django-environ==0.8.1
 alibabacloud_dysmsapi20170525==2.0.9
-tencentcloud-sdk-python==3.0.656
+tencentcloud-sdk-python==3.0.1289
 mozilla-django-oidc==3.0.0
 django-auth-dingding==0.0.3
 django-cas-ng==4.3.0
