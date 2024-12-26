@@ -138,6 +138,15 @@ DB_TYPE_CHOICES = (
     ("opensearch", "OpenSearch"),
 )
 
+CLOUD_TYPE_CHOICES = (
+    ("Tencent", "腾讯云"),
+    ("Huawei", "华为云"),
+    ("Aliyun", "阿里云"),
+    ("Aws", "AWS"),
+    ("Azure", "微软云"),
+    ("Google", "谷歌云"),
+    ("Other", "其他云"),
+)
 
 class Tunnel(models.Model):
     """
@@ -203,6 +212,9 @@ class Instance(models.Model):
     )
     password = fields.EncryptedCharField(
         verbose_name="密码", max_length=300, default="", blank=True
+    )
+    cloud = models.CharField(
+        "云类型", max_length=30, choices=CLOUD_TYPE_CHOICES, default=""
     )
     is_ssl = models.BooleanField("是否启用SSL", default=False)
     verify_ssl = models.BooleanField("是否验证服务端SSL证书", default=True)
@@ -870,9 +882,8 @@ class Config(models.Model):
 
 # 云服务认证信息配置
 class CloudAccessKey(models.Model):
-    cloud_type_choices = (("aliyun", "aliyun"),("tencentcloud", "tencentcloud"), ("huaweicloud", "huaweicloud"))
 
-    type = models.CharField(max_length=20, default="", choices=cloud_type_choices)
+    type = models.CharField(max_length=30, default="", choices=CLOUD_TYPE_CHOICES)
     key_id = models.CharField(max_length=200)
     key_secret = models.CharField(max_length=200)
     remark = models.CharField(max_length=50, default="", blank=True)

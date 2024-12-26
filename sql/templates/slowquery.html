@@ -249,6 +249,8 @@
         $(function () {
             $('#slowsql-list').on('click-row.bs.table', function (e, row, element) {
                 sessionStorage.setItem('SQLId', row.SQLId);
+                sessionStorage.setItem('SQLText', row.SQLText); // 存储 SQLText
+                sessionStorage.setItem('db_name', row.DBName);
                 $('#nav-tabs a[href="#slowsqlinfo"]').tab('show')
             });
         });
@@ -488,6 +490,7 @@
                     queryParams: function (params) {
                         var instance_name = $("#instance_name").val();
                         var db_name = $("#db_name").val();
+                        var SQLText = sessionStorage.getItem('SQLText');
                         var SQLId = sessionStorage.getItem('SQLId');
                         var StartTime = $('#reservation').data('daterangepicker').startDate.format('YYYY-MM-DD');
                         var EndTime = $("#reservation").data('daterangepicker').endDate.format('YYYY-MM-DD');
@@ -496,8 +499,9 @@
 
                         return {
                             instance_name: instance_name,
-                            db_name: db_name,
+                            db_name: db_name || sessionStorage.getItem('db_name'),
                             SQLId: SQLId,
+                            SQLText: SQLText,
                             StartTime: StartTime,
                             EndTime: EndTime,
                             limit: params.limit,
@@ -538,6 +542,10 @@
                     }, {
                         title: '用户名',
                         field: 'HostAddress',
+                        sortable:true
+                    },{
+                        title: 'IP来源',
+                        field: 'UserHost',
                         sortable:true
                     }, {
                         title: 'SQL语句',
