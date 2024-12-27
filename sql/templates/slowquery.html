@@ -310,6 +310,8 @@
         // 获取慢日志统计
         function slowquery_review() {
             $("#sqladvisor-toolbar").hide();
+            $("#aaapanel").hide();
+            $("#bbbpanel").hide();
             var instance_name = $("#instance_name").val();
             if (instance_name) {
                 //初始化table
@@ -600,8 +602,10 @@
                         $("#aaapanel").show();
                         $("#bbbpanel").show();
                         if (res.length != 0) {
-                            $("#aaa").html(res[0].SqlPlan)
-                            $("#bbb").html(res[0].Tables)
+                            const SqlPlan = res[0].SqlPlan.replace(/\\n/g, "<br>");
+                            const Tables = res[0].Tables.replace(/\\n/g, "<br>");
+                            $("#aaa").html(SqlPlan)
+                            $("#bbb").html(Tables)
                         }
                     },
                     responseHandler: function(res) {
@@ -619,6 +623,8 @@
         // 获取慢日志明细
         function slowquery_review_history() {
             $("#sqladvisor-toolbar").show();
+            $("#aaapanel").hide();
+            $("#bbbpanel").hide();
             var instance_name = $("#instance_name").val();
             if (instance_name) {
                 //初始化table

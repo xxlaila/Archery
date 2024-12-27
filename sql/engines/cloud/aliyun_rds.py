@@ -1,13 +1,14 @@
 # -*- coding: UTF-8 -*-
+import logging
 import traceback
 import simplejson as json
 import datetime
-
 from common.utils.aliyun_sdk import Aliyun
 from sql.models import AliyunRdsConfig
 from sql.engines.mysql import MysqlEngine
 from sql.engines.models import ResultSet
 
+logger = logging.getLogger(__name__)
 
 class AliyunRDS(MysqlEngine):
     def __init__(self, instance=None):

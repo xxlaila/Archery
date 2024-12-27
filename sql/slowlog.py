@@ -243,9 +243,7 @@ def usersqladvice_review_history(request):
             db_name, sqltext
         )
     else:
-        search = request.POST.get("search")
-        sortName = str(request.POST.get("sortName"))
-        sortOrder = str(request.POST.get("sortOrder")).lower()
+        # 其他
         result = {}
 
     # 返回查询结果

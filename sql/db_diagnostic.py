@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import permission_required
 
 from django.http import HttpResponse
 
-from sql.engines import get_engine
+from sql.engines import get_engine, get_tencent_engine
 from common.utils.extend_json_encoder import ExtendJSONEncoder, ExtendJSONEncoderBytes
 from sql.utils.resource_group import user_instances
 from .models import Instance
@@ -31,8 +31,14 @@ def process(request):
     except Instance.DoesNotExist:
         result = {"status": 1, "msg": "你所在组未关联该实例", "data": []}
         return HttpResponse(json.dumps(result), content_type="application/json")
-
-    query_engine = get_engine(instance=instance)
+    if instance.cloud == "Aliyun":
+        query_engine = get_engine(instance=instance)
+    else:
+        query_engine = ''
+        result = {"status": 1, "msg": "腾讯云暂不支持该数据库类型接口", "data": []}
+        return HttpResponse(
+            json.dumps(result, cls=ExtendJSONEncoderBytes), content_type="application/json"
+        )
     query_result = None
     # processlist方法已提升为父类方法，简化此处的逻辑。进程添加新数据库支持时，改前端即可。
     query_result = query_engine.processlist(command_type=command_type, **request_kwargs)
@@ -135,11 +141,13 @@ def tablespace(request):
         result = {"status": 1, "msg": "你所在组未关联该实例", "data": []}
         return HttpResponse(json.dumps(result), content_type="application/json")
 
-    query_engine = get_engine(instance=instance)
-    if instance.db_type == "mysql":
+    if instance.db_type in ["mysql", "oracle"]:
+        if instance.cloud == "Aliyun":
+            query_engine = get_engine(instance=instance)
+        else:
+            query_engine = get_tencent_engine(instance=instance)
         query_result = query_engine.tablespace(offset, limit)
-    elif instance.db_type == "oracle":
-        query_result = query_engine.tablespace(offset, limit)
+
     else:
         result = {
             "status": 1,
@@ -149,13 +157,19 @@ def tablespace(request):
         return HttpResponse(json.dumps(result), content_type="application/json")
 
     if query_result:
-        if not query_result.error:
+        if isinstance(query_result, list):
+            table_space = query_result
+            total = len(table_space)
+            result = {"status": 0, "msg": "ok", "rows": table_space, "total": total}
+        elif not query_result.error:
             table_space = query_result.to_dict()
             r = query_engine.tablespace_count()
             total = r.rows[0][0]
             result = {"status": 0, "msg": "ok", "rows": table_space, "total": total}
         else:
             result = {"status": 1, "msg": query_result.error}
+    else:
+        result = {"status": 1, "msg": "查询结果为空", "data": []}
     # 返回查询结果
     return HttpResponse(
         json.dumps(result, cls=ExtendJSONEncoder, bigint_as_string=True),
@@ -173,8 +187,10 @@ def trxandlocks(request):
     except Instance.DoesNotExist:
         result = {"status": 1, "msg": "你所在组未关联该实例", "data": []}
         return HttpResponse(json.dumps(result), content_type="application/json")
-
-    query_engine = get_engine(instance=instance)
+    if instance.cloud == "Aliyun":
+        query_engine = get_engine(instance=instance)
+    else:
+        query_engine = get_tencent_engine(instance=instance)
     if instance.db_type == "mysql":
         query_result = query_engine.trxandlocks()
     elif instance.db_type == "oracle":
@@ -210,8 +226,10 @@ def innodb_trx(request):
     except Instance.DoesNotExist:
         result = {"status": 1, "msg": "你所在组未关联该实例", "data": []}
         return HttpResponse(json.dumps(result), content_type="application/json")
-
-    query_engine = get_engine(instance=instance)
+    if instance.cloud == "Aliyun":
+        query_engine = get_engine(instance=instance)
+    else:
+        query_engine = get_tencent_engine(instance=instance)
     if instance.db_type == "mysql":
         query_result = query_engine.get_long_transaction()
     else:

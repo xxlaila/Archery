@@ -36,7 +36,13 @@ class TencentRDS(MysqlEngine):
         try:
             if not instance:
                 raise ValueError("Instance parameter cannot be None.")
-            self.instanceid = AliyunRdsConfig.objects.get(instance__instance_name=instance)
+            instance_info = AliyunRdsConfig.objects.get(instance__instance_name=instance)
+            self.instance = instance_info.instance
+            self.host = instance_info.instance.host
+            self.port = instance_info.instance.port
+            self.user = instance_info.instance.user
+            self.password = instance_info.instance.password
+            self.instanceid = instance_info
         except ObjectDoesNotExist:
             logger.error(f"No TencentRDS configuration found for instance: {instance}")
             raise
@@ -256,3 +262,62 @@ class TencentRDS(MysqlEngine):
         except Exception as e:
             logger.error(f"Failed to process slow logs: {e}")
             raise
+
+    def tablespace(self, offset, limit):
+        """
+        获取数据库实例中表的空间使用情况。
+        本方法使用腾讯云DBBrain接口，查询数据库实例中表的空间使用排名情况，并处理响应数据。
+        参数:
+        - offset (int): 数据偏移量，用于分页查询。
+        - limit (int): 每次查询返回的数据条数，用于分页查询。
+        返回:
+        - result_data: 经过处理的表空间使用情况数据。
+        抛出:
+        - TencentCloudSDKException: 当腾讯云SDK发生异常时。
+        - Exception: 其他异常情况。
+        """
+        try:
+            client = self._create_dbbrain_client()
+            req = models.DescribeTopSpaceTablesRequest()
+            params = {
+                "InstanceId": self.instanceid.rds_dbinstanceid,
+                "Limit": self.limit,
+                "SortBy": "PhysicalFileSize",
+                "Product": self.product
+            }
+            req.from_json_string(json.dumps(params))
+            resp = client.DescribeTopSpaceTables(req)
+            response_data = json.loads(resp.to_json_string())
+            result_data = self.process_describe_tablespace(response_data[['TopSpaceTables']])
+            return result_data
+        except TencentCloudSDKException as err:
+            logger.error(f"Tencent Cloud SDK Exception: {err}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+            raise
+
+    def process_describe_tablespace(self, response_data):
+        """
+        处理数据库表空间的信息。
+        该方法从数据库表空间的响应中提取并处理每张表的详细信息，将其转化为一个结构化的字典列表。
+        每个字典代表一张表，包含数据库名、表名、总行数、总磁盘空间、平均每行大小、总磁盘使用率、
+        磁盘使用量、磁盘使用量百分比、磁盘使用量变化量、磁盘使用量变化百分比。
+        Returns:
+           list: 包含处理后的数据库表空间的信息的列表。
+        """
+        result = []
+        for item in response_data:
+            table_info = {
+                "table_schema": item['TableSchema'],
+                "table_name": item['TableName'],
+                "engine": item['Engine'],
+                "total_size": item['TotalLength'],
+                "table_rows": item['TableRows'],
+                "data_size": item['DataLength'],
+                "index_size": item['IndexLength'],
+                "data_free": item['DataFree'],
+                "pct_free": item['FragRatio']
+            }
+            result.append(table_info)
+        return result
