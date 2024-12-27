@@ -194,7 +194,7 @@ class TencentRDS(MysqlEngine):
                             "TableSchema": table_schema,
                             "Keys": key_sql_text,
                             "SqlText": sql_text,
-                            "SqlPlan": sql_plan,
+                            "SqlPlan": json.dumps(sql_plan, indent=4),
                             "Comments": comments,
                             "Tables": tables,
                             "Cost": cost,
