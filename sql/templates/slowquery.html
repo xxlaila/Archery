@@ -57,26 +57,31 @@
                    style="table-layout:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></table>
         </div>
 
-        <div class="panel panel-default" id="aaapanel" style="display:none;">
+        <div class="panel panel-default" id="proposalremarkpanel" style="display:none;">
+            <div class="panel-heading">
+                <i class="fa fa-bar-chart-o fa-fw"></i> 优化建议备注
+            </div>
+            <div class="panel-body" id="proposalremarkbody">
+
+            </div>
+        </div>
+
+        <div class="panel panel-default" id="sqlimplementpanel" style="display:none;">
             <div class="panel-heading">
                 <i class="fa fa-bar-chart-o fa-fw"></i> 执行计划
             </div>
-            <!-- /.panel-heading -->
-            <div class="panel-body" id="aaa">
+            <div class="panel-body" id="sqlimplementbody">
 
             </div>
-            <!-- /.panel-body -->
         </div>
 
-        <div class="panel panel-default" id="bbbpanel" style="display:none;">
+        <div class="panel panel-default" id="outsideddlpanel" style="display:none;">
             <div class="panel-heading">
                 <i class="fa fa-bar-chart-o fa-fw"></i> 表DDL信息
             </div>
-            <!-- /.panel-heading -->
-            <div class="panel-body" id="bbb">
+            <div class="panel-body" id="outsideddlbody">
 
             </div>
-            <!-- /.panel-body -->
         </div>
     </div>
 {% endblock content %}
@@ -310,8 +315,9 @@
         // 获取慢日志统计
         function slowquery_review() {
             $("#sqladvisor-toolbar").hide();
-            $("#aaapanel").hide();
-            $("#bbbpanel").hide();
+            $("#sqlimplementpanel").hide();
+            $("#outsideddlpanel").hide();
+            $("#proposalremarkpanel").hide();
             var instance_name = $("#instance_name").val();
             if (instance_name) {
                 //初始化table
@@ -585,10 +591,6 @@
                                 return value
                             }
                         }
-                    }, {
-                        title: '优化建议备注',
-                        field: 'Comments',
-                        sortable:true
                     }],
                     locale: 'zh-CN',
                     onLoadError: onLoadErrorCallback,
@@ -599,13 +601,16 @@
                     },
                     onLoadSuccess: function(res) {
                         console.log("表格渲染成功", res)
-                        $("#aaapanel").show();
-                        $("#bbbpanel").show();
+                        $("#sqlimplementpanel").show();
+                        $("#outsideddlpanel").show();
+                        $("#proposalremarkpanel").show();
                         if (res.length != 0) {
                             const SqlPlan = res[0].SqlPlan.replace(/\\n/g, "<br>");
                             const Tables = res[0].Tables.replace(/\\n/g, "<br>");
-                            $("#aaa").html(SqlPlan)
-                            $("#bbb").html(Tables)
+                            const Comments = res[0].Comments.replace(/\\n/g, "<br>");
+                            $("#sqlimplementbody").html(SqlPlan)
+                            $("#outsideddlbody").html(Tables)
+                            $("#proposalremarkbody").html(Comments)
                         }
                     },
                     responseHandler: function(res) {
@@ -623,8 +628,9 @@
         // 获取慢日志明细
         function slowquery_review_history() {
             $("#sqladvisor-toolbar").show();
-            $("#aaapanel").hide();
-            $("#bbbpanel").hide();
+            $("#sqlimplementpanel").hide();
+            $("#outsideddlpanel").hide();
+            $("#proposalremarkpanel").hide();
             var instance_name = $("#instance_name").val();
             if (instance_name) {
                 //初始化table
