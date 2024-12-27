@@ -219,6 +219,40 @@ def slowquery_review_history(request):
         content_type="application/json",
     )
 
+# 获取云上慢sql优化建议
+@permission_required("sql.menu_slowquery", raise_exception=True)
+def usersqladvice_review_history(request):
+    instance_name = request.POST.get("instance_name")
+    db_name = request.POST.get("db_name")
+    sqltext = request.POST.get("SQLText")
+    sql_id = request.POST.get("SQLId")
+    try:
+        user_instances(request.user, db_type=["mysql"]).get(instance_name=instance_name)
+    except Exception:
+        result = {"status": 1, "msg": "你所在组未关联该实例", "data": []}
+        return HttpResponse(json.dumps(result), content_type="application/json")
+    # 判断是RDS还是其他实例
+    instance_info = Instance.objects.get(instance_name=instance_name)
+    if instance_info.cloud == "Aliyun":
+        # 调用阿里云慢日志接口
+        query_engine = get_engine(instance=instance_info)
+        result = {}
+    elif instance_info.cloud == "Tencent":
+        query_engine = get_tencent_engine(instance=instance_info)
+        result = query_engine.process_slow_log_results(
+            db_name, sqltext
+        )
+    else:
+        search = request.POST.get("search")
+        sortName = str(request.POST.get("sortName"))
+        sortOrder = str(request.POST.get("sortOrder")).lower()
+        result = {}
+
+    # 返回查询结果
+    return HttpResponse(
+        json.dumps(result, cls=ExtendJSONEncoder, bigint_as_string=True),
+        content_type="application/json",
+    )
 
 @cache_page(60 * 10)
 def report(request):
