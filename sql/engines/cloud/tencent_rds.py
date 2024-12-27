@@ -147,28 +147,54 @@ class TencentRDS(MysqlEngine):
             logger.error(f"Unexpected error: {e}")
             raise
 
-    # def process_slow_log_results(self):
-    #     try:
-    #         results = self.get_describe_slow_log_top_sqls()
-    #         logger.info(f"慢sql统计: {results}")
-    #         if 'Rows' not in results:
-    #             logger.info("No slow SQL logs found in the specified time range.")
-    #             return
-    #
-    #         for row in results.get('Rows', []):
-    #             schema = row.get('Schema')
-    #             sqltext = row.get('SqlText') or row.get('SqlTemplate')
-    #             if not schema or not sqltext:
-    #                 logger.warning(f"Missing schema or SQL text in slow log entry: {row}")
-    #                 continue
-    #             logger.info(f"Schema: {schema}, SqlText: {sqltext}")
-    #             try:
-    #                 advice = self.get_describe_user_sql_advice(schema, sqltext)
-    #                 logger.info(f"Advice for SQL: {advice}")
-    #             except Exception as e:
-    #                 logger.error(f"Failed to get advice for SQL: {e}")
-    #     except Exception as e:
-    #         logger.error(f"Failed to process slow logs: {e}")
+    def process_slow_log_results(self, schema, sqltext):
+        """
+        处理慢查询日志结果。
+        本函数根据提供的schema和SQL文本，获取慢查询建议的描述信息，并根据这些信息生成一个结果列表。
+        每条建议特别关注是否有关键（Keys）推荐，以及这些推荐是否包含SqlText。
+        参数:
+        - schema: 数据库架构名称。
+        - sqltext: SQL查询文本。
+
+        返回:
+        - 一个字典列表，每个字典包含关于慢查询的详细信息，包括SqlText, SqlPlan, Comments, Schema, TableName, TableSchema和Keys。
+        """
+        result = []
+
+        response_data = self.get_describe_user_sql_advice(schema, sqltext)
+        advices_str = json.loads(response_data["Advices"])
+
+        if advices_str:
+            for advice in advices_str:
+                table_name = advice.get("TableName", '')
+                table_schema = advice.get("TableSchema", '')
+                schema_name = response_data.get("Schema", '')
+                sql_text = response_data.get("SqlText", '')
+                sql_plan = str(json.loads(response_data.get("SqlPlan")).get("Before", ''))
+                comments = str(json.loads(response_data.get("Comments", '')))
+                tables = str(json.loads(response_data.get("Tables", '')))
+                cost = str(json.loads(response_data.get("Cost")).get("After", ''))
+                keys_info = advice.get("Keys", [])
+                if keys_info:
+                    for key in keys_info:
+                        if "SqlText" in key:
+                            key_sql_text = key["SqlText"]
+                        elif "PossibleKeys" in key:
+                            continue
+                        else:
+                            key_sql_text = ''
+                        result.append({
+                            "TableName": table_name,
+                            "TableSchema": table_schema,
+                            "Keys": key_sql_text,
+                            "SqlText": sql_text,
+                            "SqlPlan": sql_plan,
+                            "Comments": comments,
+                            "Tables": tables,
+                            "Cost": cost,
+                            "Schema": schema_name,
+                        })
+        return result
 
     def get_describe_slow_logs(self):
         """
