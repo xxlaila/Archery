@@ -393,6 +393,15 @@ def slowquery(request):
     """SQL慢日志页面"""
     return render(request, "slowquery.html")
 
+@permission_required('sql.menu_redis_analysis', raise_exception=True)
+def redisanalysis(request):
+    """Redis key 分析页面"""
+    return render(request, 'redisanalysis.html')
+
+@permission_required('sql.menu_instance_analysis', raise_exception=True)
+def dbanalysis(request):
+    """DB分析页面"""
+    return render(request, 'dbanalysis.html')
 
 @permission_required("sql.menu_instance", raise_exception=True)
 def instance(request):

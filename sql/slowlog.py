@@ -11,7 +11,7 @@ from django.views.decorators.cache import cache_page
 from pyecharts.charts import Line
 from pyecharts import options as opts
 from common.utils.chart_dao import ChartDao
-from sql.engines import get_engine,get_tencent_engine
+from sql.engines import get_engine,get_tencent_dbbrain_engine
 
 from sql.utils.resource_group import user_instances
 from common.utils.extend_json_encoder import ExtendJSONEncoder
@@ -49,7 +49,7 @@ def slowquery_review(request):
             start_time, end_time, db_name, limit, offset
         )
     elif instance_info.cloud == "Tencent":
-        query_engine = get_tencent_engine(instance=instance_info)
+        query_engine = get_tencent_dbbrain_engine(instance=instance_info)
         result = query_engine.process_slow_log_top_sqls_results()
     else:
         limit = offset + limit
@@ -148,7 +148,7 @@ def slowquery_review_history(request):
             start_time, end_time, db_name, sql_id, limit, offset
         )
     elif instance_info.cloud == "Tencent":
-        query_engine = get_tencent_engine(instance=instance_info)
+        query_engine = get_tencent_dbbrain_engine(instance=instance_info)
         result = query_engine.process_describe_slow_logs()
     else:
         search = request.POST.get("search")
@@ -238,7 +238,7 @@ def usersqladvice_review_history(request):
         query_engine = get_engine(instance=instance_info)
         result = {}
     elif instance_info.cloud == "Tencent":
-        query_engine = get_tencent_engine(instance=instance_info)
+        query_engine = get_tencent_dbbrain_engine(instance=instance_info)
         result = query_engine.process_slow_log_results(
             db_name, sqltext
         )

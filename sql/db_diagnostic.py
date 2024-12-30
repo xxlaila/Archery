@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import permission_required
 
 from django.http import HttpResponse
 
-from sql.engines import get_engine, get_tencent_engine
+from sql.engines import get_engine, get_tencent_dbbrain_engine
 from common.utils.extend_json_encoder import ExtendJSONEncoder, ExtendJSONEncoderBytes
 from sql.utils.resource_group import user_instances
 from .models import Instance
@@ -145,7 +145,7 @@ def tablespace(request):
         if instance.cloud == "Aliyun":
             query_engine = get_engine(instance=instance)
         else:
-            query_engine = get_tencent_engine(instance=instance)
+            query_engine = get_tencent_dbbrain_engine(instance=instance)
         query_result = query_engine.tablespace(offset, limit)
 
     else:
@@ -190,7 +190,7 @@ def trxandlocks(request):
     if instance.cloud == "Aliyun":
         query_engine = get_engine(instance=instance)
     else:
-        query_engine = get_tencent_engine(instance=instance)
+        query_engine = get_tencent_dbbrain_engine(instance=instance)
     if instance.db_type == "mysql":
         query_result = query_engine.trxandlocks()
     elif instance.db_type == "oracle":
@@ -229,7 +229,7 @@ def innodb_trx(request):
     if instance.cloud == "Aliyun":
         query_engine = get_engine(instance=instance)
     else:
-        query_engine = get_tencent_engine(instance=instance)
+        query_engine = get_tencent_dbbrain_engine(instance=instance)
     if instance.db_type == "mysql":
         query_result = query_engine.get_long_transaction()
     else:
