@@ -157,6 +157,29 @@
                             <!-- /.nav-second-level -->
                         </li>
                     {% endif %}
+                    {% if perms.sql.menu_instance_monitor %}
+                        <li>
+                            <a href="#"><i class="fa fa-database fa-fw"></i>实例监控<span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level">
+                                {% if perms.sql.menu_redis_analysis %}
+                                    <li>
+                                        <a href="/redis/">Redis大Key分析</a>
+                                    </li>
+                                {% endif %}
+                                {% if perms.sql.menu_instance_info %}
+                                    <li>
+                                        <a href="/dbanalysis/">DB实例信息</a>
+                                    </li>
+                                {% endif %}
+                                {% if perms.sql.menu_instance_moniror_info %}
+                                    <li>
+                                        <a href="https://grafana.zhenaioa.com/d/Bqhl1qQSz/mysql-teng-xun-yun?orgId=1&var-vip=10.11.5.223&refresh=30s" target="_blank">DB监控信息</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                            <!-- /.nav-second-level -->
+                        </li>
+                    {% endif %}
                     {% if perms.sql.menu_instance %}
                         <li>
                             <a href="#"><i class="fa fa-database fa-fw"></i> 实例管理<span class="fa arrow"></span></a>

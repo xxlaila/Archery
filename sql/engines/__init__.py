@@ -246,7 +246,24 @@ def get_engine(instance=None):  # pragma: no cover
         )
     return engine(instance=instance)
 
-def get_tencent_engine(instance=None):
+def get_tencent_dbbrain_engine(instance=None):
+    """获取数据库操作engine"""
+    if instance.db_type == "mysql":
+        from sql.models import AliyunRdsConfig
+
+        if AliyunRdsConfig.objects.filter(instance=instance, is_enable=True).exists():
+            from .cloud.tencent_dbbrain import TencentDbbrain
+
+            return TencentDbbrain(instance=instance)
+    engine = engine_map.get(instance.db_type)
+    if not engine:
+        raise ValueError(
+            f"engine {instance.db_type} not enabled or not supported, please contact admin"
+        )
+    return engine(instance=instance)
+
+def get_tencent_cdb_engine(instance=None):
+    """获取数据库操作engine"""
     if instance.db_type == "mysql":
         from sql.models import AliyunRdsConfig
 
@@ -254,6 +271,22 @@ def get_tencent_engine(instance=None):
             from .cloud.tencent_rds import TencentRDS
 
             return TencentRDS(instance=instance)
+    engine = engine_map.get(instance.db_type)
+    if not engine:
+        raise ValueError(
+            f"engine {instance.db_type} not enabled or not supported, please contact admin"
+        )
+    return engine(instance=instance)
+
+def get_tencent_redis(instance=None):
+    """获取redis操作engine"""
+    if instance.db_type == "redis" and instance.cloud == "Tencent":
+        from sql.models import AliyunRdsConfig
+        if AliyunRdsConfig.objects.filter(instance=instance, is_enable=True).exists():
+            from .cloud.tencent_redis import TencentRedis
+
+            return TencentRedis(instance=instance)
+
     engine = engine_map.get(instance.db_type)
     if not engine:
         raise ValueError(

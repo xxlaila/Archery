@@ -23,6 +23,8 @@ from sql import (
     archiver,
     audit_log,
     user,
+    instance_redis,
+    instance_analysis
 )
 from sql.utils import tasks
 from common.utils import ding_api
@@ -165,4 +167,10 @@ urlpatterns = [
     path("audit/input/", audit_log.audit_input),
     path("user/list/", user.lists),
     path("user/qrcode/<str:data>/", totp.generate_qrcode),
+    path('redis/', views.redisanalysis),
+    path('redis/rediskeysize/', instance_redis.redis_bigkey),
+    path('redis/redishotkey/', instance_redis.redis_hotkey),
+    path('redis/redis_instanceinfo/', instance_redis.redis_instanceinfo),
+    path('dbanalysis/', views.dbanalysis),
+    path('dbanalysis/instanceinfo/', instance_analysis.instanceinfo),
 ]
