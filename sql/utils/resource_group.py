@@ -20,6 +20,13 @@ def user_groups(user):
         ]
     return group_list
 
+def all_groups():
+    """
+    获取所有资源组列表
+    :return:
+    """
+    group_list = [group for group in ResourceGroup.objects.filter(is_deleted=0)]
+    return group_list
 
 def user_instances(user, type=None, db_type=None, tag_codes=None):
     """

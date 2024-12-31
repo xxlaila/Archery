@@ -8,6 +8,7 @@
 import types
 import json
 import logging
+import datetime
 from django.core.exceptions import ObjectDoesNotExist
 from tencentcloud.common import credential
 from tencentcloud.common.profile.client_profile import ClientProfile
@@ -18,6 +19,10 @@ from sql.models import CloudAccessKey
 from sql.models import AliyunRdsConfig
 
 logger = logging.getLogger(__name__)
+
+current_time = datetime.datetime.now()
+starttime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+endtime = (current_time - datetime.timedelta(hours=12)).strftime("%Y-%m-%d %H:%M:%S")
 
 class TencentRedis:
     def __init__(self, instance=None, zone_list: str = "ap-beijing"):
@@ -172,6 +177,36 @@ class TencentRedis:
             }
             req.from_json_string(json.dumps(params))
             resp = client.DescribeInstanceMonitorTopNCmdTook(req)
+            return json.loads(resp.to_json_string())
+        except TencentCloudSDKException as err:
+            logger.error(f"Tencent Cloud SDK Exception: {err}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+            raise
+
+    def tencent_api_DescribeSlowLog(self):
+        """
+        查询redis慢日志
+        请求参数:{
+            "InstanceId": "crs-asda****",
+            "EndTime": "2019-09-09 12:12:41",
+            "BeginTime": "2019-09-08 12:12:41"
+        }
+        :return:
+        """
+        try:
+            client = self._create_redis_client()
+            req = models.DescribeSlowLogRequest()
+            params = {
+                'InstanceId': self.instanceid.rds_dbinstanceid,
+                "BeginTime": endtime,
+                "EndTime": starttime,
+                "Limit": 50,
+                "Role": "master"
+            }
+            req.from_json_string(json.dumps(params))
+            resp = client.DescribeSlowLog(req)
             return json.loads(resp.to_json_string())
         except TencentCloudSDKException as err:
             logger.error(f"Tencent Cloud SDK Exception: {err}")

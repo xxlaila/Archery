@@ -10,12 +10,22 @@ from django.http import HttpResponse
 from common.utils.extend_json_encoder import ExtendJSONEncoder
 from common.utils.permission import superuser_required
 from common.utils.convert import Convert
-from sql.models import ResourceGroup, Users, Instance
-from sql.utils.resource_group import user_instances
-from sql.utils.workflow_audit import Audit
+from sql.models import ResourceGroup, Users, Instance, ResoueceGroupApply
+from sql.utils.resource_group import user_instances, user_groups
+from common.utils.const import WorkflowDict
+from sql.utils.workflow_audit import Audit, AuditV2, AuditException
+from django.contrib.auth.decorators import permission_required
+from django.db.models import Q
+from sql.notify import notify_for_audit
+from django_q.tasks import async_task
+from sql.utils.workflow_audit import get_auditor
+from django.db import transaction
+from common.utils.const import WorkflowStatus, WorkflowType, WorkflowAction
+from django.shortcuts import render, get_object_or_404
+from django.http import HttpResponseRedirect, FileResponse, Http404
+from django.urls import reverse
 
-logger = logging.getLogger("default")
-
+logger = logging.getLogger(__name__)
 
 @superuser_required
 def group(request):
@@ -258,3 +268,199 @@ def changeauditors(request):
 
     # 返回结果
     return HttpResponse(json.dumps(result), content_type="application/json")
+
+
+@permission_required('sql.query_applypriv', raise_exception=True)
+def get_resource_group_apply_list(request):
+    user = request.user
+    limit = int(request.POST.get('limit', 0))
+    offset = int(request.POST.get('offset', 0))
+    limit = offset + limit
+    search = request.POST.get('search', '')
+
+    query_privs = ResoueceGroupApply.objects.all()
+    # 过滤搜索项，支持模糊搜索标题、用户
+    if search:
+        query_privs = query_privs.filter(Q(title__icontains=search) | Q(user_display__icontains=search))
+    # 管理员可以看到全部数据
+    if user.is_superuser:
+        query_privs = query_privs
+    # 拥有审核权限、可以查看组内所有工单
+    elif user.has_perm('sql.query_review'):
+        # 先获取用户所在资源组列表
+        group_list = user_groups(user)
+        group_ids = [group.group_id for group in group_list]
+        query_privs = query_privs.filter(group_id__in=group_ids)
+    # 其他人只能看到自己提交的工单
+    else:
+        query_privs = query_privs.filter(user_name=user.username)
+
+    count = query_privs.count()
+    lists = query_privs.order_by('-apply_id')[offset:limit].values(
+        'apply_id', 'title', 'user_display', 'status', 'create_time', 'group_name', 'remark'
+    )
+
+    # QuerySet 序列化
+    rows = [row for row in lists]
+
+    result = {"total": count, "rows": rows}
+    # 返回查询结果
+    return HttpResponse(json.dumps(result, cls=ExtendJSONEncoder, bigint_as_string=True),
+                        content_type='application/json')
+
+def resource_group_apply(request):
+    user = request.user
+    title = request.POST['title']
+    group_name = request.POST.get('group_name')
+    group_id = ResourceGroup.objects.get(group_name=group_name).group_id
+    remark = request.POST.get('apply_remark', '')
+    result = {'status': 0, 'msg': 'ok', 'data': {}}
+    apply_info = ResoueceGroupApply(
+        title=title,
+        status=WorkflowStatus.WAITING,
+        user_name=user.username,
+        user_display=user.display,
+        group_id=group_id,
+        group_name=group_name,
+        remark=remark,
+        audit_auth_groups=Audit.settings(group_id, WorkflowDict.workflow_type['resource_group']),
+    )
+    apply_info.save()
+    logger.info(f"创建资源组申请, {apply_info}")
+    # 显式指定 workflow_type
+    # workflow_type = WorkflowType.RESOURCE_GROUP
+    audit_handler = get_auditor(workflow=apply_info, resource_group=group_name, resource_group_id=group_id,
+                                workflow_type=WorkflowType.RESOURCE_GROUP)
+
+    # 处理审核流程
+    try:
+        with transaction.atomic():
+            audit_handler.create_audit()
+    except Exception as e:
+        logger.error(f"新建审批流失败, {str(e)}")
+        result["status"] = 1
+        result["msg"] = "新建审批流失败, 请联系管理员"
+        return HttpResponse(json.dumps(result), content_type="application/json")
+    _resource_group_apply_audit_call_back(
+        audit_handler.workflow.apply_id, audit_handler.audit.current_status
+    )
+    # 消息通知
+    async_task(
+        notify_for_audit,
+        workflow_audit=audit_handler.audit,
+        timeout=60,
+        task_name=f"query-priv-apply-{audit_handler.workflow.apply_id}",
+    )
+    return HttpResponse(json.dumps(result), content_type="application/json")
+
+
+@permission_required('sql.menu_group_purview', raise_exception=True)
+def get_resource_group_apply_detail(request, apply_id):
+    workflow_detail = ResoueceGroupApply.objects.get(apply_id=apply_id)
+    # 获取当前审批和审批流程
+    audit_handler = AuditV2(workflow=workflow_detail)
+    review_info = audit_handler.get_review_info()
+    # 是否可审核
+    logger.info(f"获取资源组申请详情, {request.user}, {apply_id}, {4}")
+    is_can_review = Audit.can_review(request.user, apply_id, 4)
+
+    # 获取审核日志
+    if workflow_detail.status == 2:
+        try:
+            audit_id = Audit.detail_by_workflow_id(
+                workflow_id=apply_id, workflow_type=4
+            ).audit_id
+            last_operation_info = (
+                Audit.logs(audit_id=audit_id).latest("id").operation_info
+            )
+        except Exception as e:
+            logger.debug(f"无审核日志记录，错误信息{e}")
+            last_operation_info = ""
+    else:
+        last_operation_info = ""
+
+    logger.info(f"获取资源组申请详情, {workflow_detail}, {type(workflow_detail)}, {workflow_detail.status}")
+    logger.info(f"获取资源组申请详情, {is_can_review}, {type(is_can_review)}")
+
+    context = {
+        "workflow_detail": workflow_detail,
+        "review_info": review_info,
+        "last_operation_info": last_operation_info,
+        "is_can_review": is_can_review,
+    }
+    return render(request, "resourcegroupapplydetail.html", context)
+
+def _resource_group_apply_audit_call_back(apply_id, workflow_status):
+    """
+    资源组权限申请用于工作流审核回调
+    :param apply_id: 申请id
+    :param workflow_status: 审核结果
+    :return:
+    """
+    # 更新业务表状态
+    apply_info = ResoueceGroupApply.objects.get(apply_id=apply_id)
+    apply_info.status = workflow_status
+    apply_info.save()
+    # 审核通过插入权限信息，批量插入，减少性能消耗
+    if workflow_status == WorkflowStatus.PASSED:
+        try:
+            # 获取申请记录中的用户和资源组
+            user = Users.objects.get(username=apply_info.user_name)
+            resource_group = ResourceGroup.objects.get(group_id=apply_info.group_id)
+
+            # 将资源组与用户关联
+            user.resource_group.add(resource_group)
+            user.save()
+        except Users.DoesNotExist:
+            raise ValueError(f"用户 {apply_info.user_name} 不存在")
+        except ResourceGroup.DoesNotExist:
+            raise ValueError(f"资源组 ID {apply_info.group_id} 不存在")
+
+@permission_required("sql.menu_group_purview", raise_exception=True)
+def query_resou_group_audit(request):
+    """
+    查询资源组审核
+    :param request:
+    :return:
+    """
+    # 获取用户信息
+    apply_id = int(request.POST["apply_id"])
+    try:
+        audit_status = WorkflowAction(int(request.POST["audit_status"]))
+    except ValueError as e:
+        return render(
+            request, "error.html", {"errMsg": f"audit_status 参数错误, {str(e)}"}
+        )
+    audit_remark = request.POST.get("audit_remark")
+
+    if not audit_remark:
+        audit_remark = ""
+
+    try:
+        sql_query_apply = ResoueceGroupApply.objects.get(apply_id=apply_id)
+    except ResoueceGroupApply.DoesNotExist:
+        return render(request, "error.html", {"errMsg": "工单不存在"})
+    auditor = get_auditor(workflow=sql_query_apply)
+    # 使用事务保持数据一致性
+    with transaction.atomic():
+        try:
+            workflow_audit_detail = auditor.operate(
+                audit_status, request.user, audit_remark
+            )
+        except AuditException as e:
+            return render(request, "error.html", {"errMsg": f"审核失败: {str(e)}"})
+        # 统一 call back, 内部做授权和更新数据库内容
+        _resource_group_apply_audit_call_back(
+            auditor.audit.workflow_id, auditor.audit.current_status
+        )
+
+    # 消息通知
+    async_task(
+        notify_for_audit,
+        workflow_audit=auditor.audit,
+        workflow_audit_detail=workflow_audit_detail,
+        timeout=60,
+        task_name=f"resource-group-audit-{apply_id}",
+    )
+
+    return HttpResponseRedirect(reverse("sql:resourcegroupapply-detail", args=(apply_id,)))

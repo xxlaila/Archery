@@ -6,7 +6,9 @@ from sql.engines.models import ResultSet, ReviewSet
 from sql.models import Instance
 from sql.utils.ssh_tunnel import SSHConnection
 from django.conf import settings
+import logging
 
+logger = logging.getLogger(__name__)
 
 class EngineBase:
     """enginebase 只定义了init函数和若干方法的名字, 具体实现用mysql.py pg.py等实现"""

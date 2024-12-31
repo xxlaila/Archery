@@ -30,6 +30,7 @@ from .models import (
     ArchiveConfig,
     AuditEntry,
     TwoFactorAuthConfig,
+    AccountApply,
 )
 from sql.utils.workflow_audit import Audit, AuditV2, AuditException
 from sql.utils.sql_review import (
@@ -39,8 +40,8 @@ from sql.utils.sql_review import (
     can_view,
     can_rollback,
 )
-from common.utils.const import Const, WorkflowType, WorkflowAction
-from sql.utils.resource_group import user_groups, user_instances
+from common.utils.const import Const, WorkflowType, WorkflowAction, WorkflowDict
+from sql.utils.resource_group import user_groups, user_instances, all_groups
 
 import logging
 
@@ -327,6 +328,15 @@ def sqlquery(request):
         },
     )
 
+@permission_required("sql.menu_group_purview", raise_exception=True)
+def grouppurviewapply(request):
+    """查询权限申请列表页面"""
+    user = request.user
+    # 获取资源组
+    group_list = all_groups()
+
+    context = {"group_list": group_list, "engines": engine_map}
+    return render(request, "resourcegroupapply.html", context)
 
 @permission_required("sql.menu_queryapplylist", raise_exception=True)
 def queryapplylist(request):
@@ -645,3 +655,39 @@ def audit_sqlworkflow(request):
             "resource_group": resource_group,
         },
     )
+
+@permission_required('sql.menu_queryapplylist', raise_exception=True)
+def accountapplylist(request):
+    """数据库账号申请列表页面"""
+    user = request.user
+    # 获取资源组
+    group_list = user_groups(user)
+
+    context = {'group_list': group_list}
+    return render(request, 'accountapplylist.html', context)
+
+
+def accountapplydetail(request, id):
+    """数据库账号申请详情页面"""
+    workflow_detail = AccountApply.objects.get(id=id)
+    workflow_type = WorkflowDict.workflow_type['account']
+    # 获取当前审批和审批流程
+    audit_auth_group, current_audit_auth_group, display_names = Audit.review_info(id, workflow_type)
+
+    # 是否可审核
+    is_can_review = Audit.can_review(request.user, id, workflow_type)
+    # 获取审核日志
+    if workflow_detail.status == 2:
+        try:
+            audit_id = Audit.detail_by_workflow_id(workflow_id=id, workflow_type=workflow_type).audit_id
+            last_operation_info = Audit.logs(audit_id=audit_id).latest('id').operation_info
+        except Exception as e:
+            logger.debug(f'无审核日志记录，错误信息{e}')
+            last_operation_info = ''
+    else:
+        last_operation_info = ''
+
+    context = {'workflow_detail': workflow_detail, 'audit_auth_group': audit_auth_group,
+               'last_operation_info': last_operation_info, 'current_audit_auth_group': current_audit_auth_group,
+               'is_can_review': is_can_review, 'display_names': display_names}
+    return render(request, 'accountapplydetail.html', context)

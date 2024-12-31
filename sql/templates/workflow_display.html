@@ -9,7 +9,7 @@
         <u class="text-danger">
             {{ n.group.name }}(
             {% for u in n.group.user_set.all %}
-            <span class="text-primary">{{ u.username }}</span>
+            <span class="text-primary">{{ u.display }}</span>
             {% endfor %})
         </u>
     {% else %}

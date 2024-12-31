@@ -82,6 +82,7 @@ def extract_instanceinfo(instance_name, instancetypes):
                     "db_type": instance_info.db_type
                 })
     return rows
+
 @permission_required('sql.menu_instance_analysis', raise_exception=True)
 def instanceinfo(request):
     """mysql 实例信息"""

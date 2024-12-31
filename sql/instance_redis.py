@@ -17,6 +17,35 @@ from sql.models import Instance
 
 logger = logging.getLogger(__name__)
 
+@permission_required('sql.menu_redis_analysis', raise_exception=True)
+def redis_live_session_details(request):
+    """redis会话详情"""
+    instance_name = request.POST.get('instance_name')
+    try:
+        user_instances(request.user, db_type=["redis"]).get(instance_name=instance_name)
+    except Exception:
+        result = {"status": 1, "msg": "你所在组未关联该实例", "data": []}
+        return HttpResponse(json.dumps(result), content_type="application/json")
+    instance_info = Instance.objects.get(instance_name=instance_name)
+    if instance_info.cloud == "Tencent" and instance_info.db_type == "redis":
+        query_engine = get_tencent_dbbrain_engine(instance=instance_info)
+        instanceinfo_list = query_engine.tencent_api_DescribeRedisProcessListRequest()
+    else:
+        instanceinfo_list = {}
+    if instanceinfo_list:
+        rows = []
+        for row in instanceinfo_list['Processes']:
+            rows.append(row)
+        # 排序
+        rows.sort(key=lambda x: x["ProxyId"], reverse=1)
+        # 取前10行
+        rows = rows[:30]
+    else:
+        rows = []
+    result = {'status': 0, 'msg': 'ok', 'rows': rows}
+    return HttpResponse(json.dumps(result, cls=ExtendJSONEncoder, bigint_as_string=True),
+                        content_type='application/json')
+
 
 @permission_required('sql.menu_redis_analysis', raise_exception=True)
 def redis_instance_cpu_time(request):
@@ -174,5 +203,38 @@ def redis_hotkey(request):
     else:
         rows = []
     result = {'status': 0, 'msg': 'ok', 'rows': rows}
+    return HttpResponse(json.dumps(result, cls=ExtendJSONEncoder, bigint_as_string=True),
+                        content_type='application/json')
+
+@permission_required('sql.menu_redis_analysis', raise_exception=True)
+def redis_slowlog(request):
+    """redis 慢查询"""
+    instance_name = request.POST.get('instance_name')
+    try:
+        user_instances(request.user, db_type=["redis"]).get(instance_name=instance_name)
+    except Exception:
+        result = {"status": 1, "msg": "你所在组未关联该实例", "data": []}
+        return HttpResponse(json.dumps(result), content_type="application/json")
+    instance_info = Instance.objects.get(instance_name=instance_name)
+    if instance_info.cloud == "Tencent" and instance_info.db_type == "redis":
+        query_engine = get_tencent_redis(instance=instance_info)
+        instanceinfo_list = query_engine.tencent_api_DescribeSlowLog()
+    else:
+        instanceinfo_list = {}
+    # 查询大key
+    if instanceinfo_list:
+        slowlog_list = instanceinfo_list["InstanceSlowlogDetail"]
+        count = instanceinfo_list["TotalCount"]
+    else:
+        slowlog_list = []
+        count = 0
+    rows = []
+    for row in slowlog_list:
+        rows.append(row)
+    # 排序
+    rows.sort(key=lambda x: x["Duration"], reverse=1)
+    # 取前10行
+    rows = rows[:40]
+    result = {'status': 0, 'msg': 'ok', 'rows': rows, 'count': count}
     return HttpResponse(json.dumps(result, cls=ExtendJSONEncoder, bigint_as_string=True),
                         content_type='application/json')

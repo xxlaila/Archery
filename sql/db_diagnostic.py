@@ -31,23 +31,24 @@ def process(request):
     except Instance.DoesNotExist:
         result = {"status": 1, "msg": "你所在组未关联该实例", "data": []}
         return HttpResponse(json.dumps(result), content_type="application/json")
-    if instance.cloud == "Aliyun":
+    if instance.cloud == "Aliyun" and instance.db_type == "mysql":
         query_engine = get_engine(instance=instance)
+        query_result = query_engine.processlist(command_type=command_type, **request_kwargs)
     else:
-        query_engine = ''
-        result = {"status": 1, "msg": "腾讯云暂不支持该数据库类型接口", "data": []}
-        return HttpResponse(
-            json.dumps(result, cls=ExtendJSONEncoderBytes), content_type="application/json"
-        )
-    query_result = None
+        query_engine = get_tencent_dbbrain_engine(instance=instance)
+        query_result = query_engine.tencent_api_DescribeMySqlProcessList()
     # processlist方法已提升为父类方法，简化此处的逻辑。进程添加新数据库支持时，改前端即可。
-    query_result = query_engine.processlist(command_type=command_type, **request_kwargs)
     if query_result:
-        if not query_result.error:
+        if hasattr(query_result, 'error') and not query_result.error:
             processlist = query_result.to_dict()
             result = {"status": 0, "msg": "ok", "rows": processlist}
-        else:
+        elif hasattr(query_result, 'error'):
             result = {"status": 1, "msg": query_result.error}
+        else:
+            processlist = query_result
+            result = {"status": 0, "msg": "ok", "rows": processlist}
+    else:
+        result = {"status": 0, "msg": "ok", "rows": {}}
 
     # 返回查询结果
     # ExtendJSONEncoderBytes 使用json模块，bigint_as_string只支持simplejson
@@ -71,7 +72,11 @@ def create_kill_session(request):
     result = {"status": 0, "msg": "ok", "data": []}
     query_engine = get_engine(instance=instance)
     if instance.db_type == "mysql":
-        result["data"] = query_engine.get_kill_command(json.loads(thread_ids))
+        if instance.cloud == "Aliyun":
+            result["data"] = query_engine.get_kill_command(json.loads(thread_ids))
+        else:
+            query_engine = get_tencent_dbbrain_engine(instance=instance)
+            result["data"] = query_engine.tencent_api_CreateKillTask(json.loads(thread_ids))
     elif instance.db_type == "mongo":
         kill_command = query_engine.get_kill_command(json.loads(thread_ids))
         result["data"] = kill_command
@@ -107,7 +112,11 @@ def kill_session(request):
     engine = get_engine(instance=instance)
     r = None
     if instance.db_type == "mysql":
-        r = engine.kill(json.loads(thread_ids))
+        if instance.cloud == "Aliyun":
+            r = engine.kill(json.loads(thread_ids))
+        else:
+            query_engine = get_tencent_dbbrain_engine(instance=instance)
+            r = query_engine.tencent_api_CreateKillTask(json.loads(thread_ids))
     elif instance.db_type == "mongo":
         r = engine.kill_op(json.loads(thread_ids))
     elif instance.db_type == "oracle":

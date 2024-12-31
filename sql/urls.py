@@ -24,7 +24,8 @@ from sql import (
     audit_log,
     user,
     instance_redis,
-    instance_analysis
+    instance_analysis,
+    account_apply
 )
 from sql.utils import tasks
 from common.utils import ding_api
@@ -136,6 +137,7 @@ urlpatterns = [
     path("query/applyforprivileges/", sql.query_privileges.query_priv_apply),
     path("query/modifyprivileges/", sql.query_privileges.query_priv_modify),
     path("query/privaudit/", sql.query_privileges.query_priv_audit),
+    path("query/resource_group_audit/", sql.resource_group.query_resou_group_audit),
     path("binlog/list/", binlog.binlog_list),
     path("binlog/my2sql/", binlog.my2sql),
     path("binlog/del_log/", binlog.del_binlog),
@@ -172,6 +174,23 @@ urlpatterns = [
     path('redis/redishotkey/', instance_redis.redis_hotkey),
     path('redis/redis_instanceinfo/', instance_redis.redis_instanceinfo),
     path('redis/redis_instance_cpu_time/', instance_redis.redis_instance_cpu_time),
+    path('redis/redis_live_session_details/', instance_redis.redis_live_session_details),
+    path('redis/redis_slowlog/', instance_redis.redis_slowlog),
     path('dbanalysis/', views.dbanalysis),
     path('dbanalysis/instanceinfo/', instance_analysis.instanceinfo),
+
+    # 资源组申请
+    path('resourcegroupapply/', views.grouppurviewapply),
+    path('resourcegroupapply/list/', resource_group.get_resource_group_apply_list),
+    path('resourcegroupapply/group_apply/', resource_group.resource_group_apply),
+    path('resourcegroupapply/detail/<int:apply_id>/', resource_group.get_resource_group_apply_detail,
+         name="resourcegroupapply-detail"),
+
+    # 账号申请
+    path('accountapplylist/', views.accountapplylist),
+    path('accountapply/list/', account_apply.account_apply_list),
+    path('accountapply/account_apply/', account_apply.account_apply),
+    path('accountapply/detail/<int:apply_id>/', views.accountapplydetail, name='accountapplydetail'),
+    path('accountapply/audit/', account_apply.account_apply_audit),
+    path('accountapply/check/', account_apply.account_apply_check),
 ]

@@ -35,7 +35,6 @@ from sql.utils.workflow_audit import get_auditor, AuditException, Audit
 logger = logging.getLogger("default")
 __author__ = "hhyo"
 
-
 @permission_required("sql.menu_archive", raise_exception=True)
 def archive_list(request):
     """

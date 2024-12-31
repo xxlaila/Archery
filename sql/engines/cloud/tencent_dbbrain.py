@@ -168,7 +168,14 @@ class TencentDbbrain(MysqlEngine):
         result = []
 
         response_data = self.get_describe_user_sql_advice(schema, sqltext)
-        advices_str = json.loads(response_data["Advices"])
+        logger.info(f"SQL Advice: {response_data}")
+        if response_data:
+            if "Advices" in response_data:
+                advices_str = json.loads(response_data["Advices"])
+            else:
+                advices_str = []
+        else:
+            advices_str = []
 
         if advices_str:
             for advice in advices_str:
@@ -204,7 +211,7 @@ class TencentDbbrain(MysqlEngine):
 
     def get_describe_slow_logs(self):
         """
-        查看慢日志明细信息
+        查看mysql慢日志明细信息
         """
         try:
             client = self._create_dbbrain_client()
@@ -288,7 +295,7 @@ class TencentDbbrain(MysqlEngine):
             req.from_json_string(json.dumps(params))
             resp = client.DescribeTopSpaceTables(req)
             response_data = json.loads(resp.to_json_string())
-            result_data = self.process_describe_tablespace(response_data[['TopSpaceTables']])
+            result_data = self.process_describe_tablespace(response_data['TopSpaceTables'])
             return result_data
         except TencentCloudSDKException as err:
             logger.error(f"Tencent Cloud SDK Exception: {err}")
@@ -322,6 +329,94 @@ class TencentDbbrain(MysqlEngine):
             result.append(table_info)
         return result
 
+    def tencent_api_DescribeMySqlProcessList(self):
+        """
+        查询关系型数据库的实时线程列表
+        :param diag_event_id:
+        :return: {
+          "Response": {
+            "ProcessList": [
+              {
+                "Command": "Binlog Dump",
+                "DB": "",
+                "Host": "172.24.6.174:60830",
+                "ID": "67197",
+                "Info": "",
+                "State": "Master has sent all binlog to slave; waiting for more updates",
+                "Time": "1076118",
+                "User": "hlw_canal"
+              },
+            ]
+          }
+        }
+        """
+        try:
+            client = self._create_dbbrain_client()
+            req = models.DescribeMySqlProcessListRequest()
+            params = {
+                "InstanceId": self.instanceid.rds_dbinstanceid,
+                "Limit": self.limit,
+                "Product": "mysql"
+            }
+            req.from_json_string(json.dumps(params))
+            resp = client.DescribeMySqlProcessList(req)
+            response_data = json.loads(resp.to_json_string())
+            result_data = self.process_describe_mySql_process_list(response_data['ProcessList'])
+            return result_data
+        except TencentCloudSDKException as err:
+            logger.error(f"Tencent Cloud SDK Exception: {err}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+            raise
+
+    def process_describe_mySql_process_list(self, response_data):
+        result = []
+        for item in response_data:
+            table_info = {
+                "id": item['ID'],
+                "user": item['User'],
+                "host": item['Host'],
+                "db": item['DB'],
+                "time": item['Time'],
+                "command": item['Command'],
+                "state": item['State'],
+                "info": item['Info']
+            }
+            result.append(table_info)
+        return result
+
+
+    def tencent_api_CreateKillTask(self, kill_id):
+        """
+        终止指定会话(mysql)。
+        :param kill_id:
+        :return: {
+            "Response": {
+                "Status": 1,
+                "RequestId": "09299b00-b878-11eb-b0b4-959ba47770cf"
+            }
+        }
+        """
+        try:
+            client = self._create_dbbrain_client()
+            req = models.CreateKillTaskRequest()
+            params = {
+                "InstanceId": self.instanceid.rds_dbinstanceid,
+                "KillId": kill_id,
+                "Product": "mysql"
+            }
+            req.from_json_string(json.dumps(params))
+            resp = client.CreateKillTask(req)
+            return json.loads(resp.to_json_string())
+        except TencentCloudSDKException as err:
+            logger.error(f"Tencent Cloud SDK Exception: {err}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+            raise
+
+    # redis 模块存放区
     def tencent_api_DescribeRedisTopBigKeys(self, reqtime):
         """
         查询redis实例大key列表。
@@ -339,6 +434,44 @@ class TencentDbbrain(MysqlEngine):
             }
             req.from_json_string(json.dumps(params))
             resp = client.DescribeRedisTopBigKeys(req)
+            return json.loads(resp.to_json_string())
+        except TencentCloudSDKException as err:
+            logger.error(f"Tencent Cloud SDK Exception: {err}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+            raise
+
+    def tencent_api_DescribeRedisProcessListRequest(self):
+        """
+        获取 Redis 实例所有 proxy 节点的实时会话详情列表
+        :return:{
+          "Response": {
+            "Processes": [
+              {
+                "Address": "10.21.72.6:51426",
+                "Age": 1074258,
+                "FileDescriptor": 12,
+                "Id": -2214406140827895,
+                "Idle": 402,
+                "LastCommand": "pttl",
+                "Name": "",
+                "ProxyId": "090bfe6b0f7a4e5db786e7e5be8fcbe636957847"
+              },
+            ]
+          }
+        }
+        """
+        try:
+            client = self._create_dbbrain_client()
+            req = models.DescribeRedisProcessListRequest()
+            params = {
+                "InstanceId": self.instanceid.rds_dbinstanceid,
+                "Limit": self.limit,
+                "Product": "redis"
+            }
+            req.from_json_string(json.dumps(params))
+            resp = client.DescribeRedisProcessList(req)
             return json.loads(resp.to_json_string())
         except TencentCloudSDKException as err:
             logger.error(f"Tencent Cloud SDK Exception: {err}")

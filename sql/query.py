@@ -18,10 +18,9 @@ from sql.query_privileges import query_priv_check
 from sql.utils.resource_group import user_instances
 from sql.utils.tasks import add_kill_conn_schedule, del_schedule
 from .models import QueryLog, Instance
-from sql.engines import get_engine
+from sql.engines import get_engine, get_tencent_redis, get_tencent_dbbrain_engine
 
 logger = logging.getLogger("default")
-
 
 @permission_required("sql.query_submit", raise_exception=True)
 def query(request):

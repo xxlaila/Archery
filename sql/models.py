@@ -9,7 +9,6 @@ from mirage.crypto import Crypto
 
 from common.utils.const import WorkflowStatus, WorkflowType, WorkflowAction
 
-
 class ResourceGroup(models.Model):
     """
     资源组
@@ -288,6 +287,10 @@ class WorkflowAuditMixin:
             return WorkflowType.ARCHIVE
         elif isinstance(self, QueryPrivilegesApply):
             return WorkflowType.QUERY
+        elif isinstance(self, ResoueceGroupApply):
+            return WorkflowType.RESOURCE_GROUP
+        elif isinstance(self, AccountApply):
+            return WorkflowType.ACCOUNT
 
     @property
     def workflow_pk_field(self):
@@ -297,6 +300,10 @@ class WorkflowAuditMixin:
             return "id"
         elif isinstance(self, QueryPrivilegesApply):
             return "apply_id"
+        elif isinstance(self, ResoueceGroupApply):
+            return "apply_id"
+        elif isinstance(self, AccountApply):
+            return "id"
 
     def get_audit(self) -> Optional["WorkflowAudit"]:
         try:
@@ -406,6 +413,10 @@ class WorkflowAudit(models.Model):
             return SqlWorkflow.objects.get(id=self.workflow_id)
         elif self.workflow_type == WorkflowType.ARCHIVE:
             return ArchiveConfig.objects.get(id=self.workflow_id)
+        elif self.workflow_type == WorkflowType.RESOURCE_GROUP:
+            return ResoueceGroupApply.objects.get(apply_id=self.workflow_id)
+        elif self.workflow_type == WorkflowType.ACCOUNT:
+            return AccountApply.objects.get(id=self.workflow_id)
         raise ValueError("无法获取到关联工单")
 
     def __int__(self):
@@ -953,14 +964,16 @@ class Permission(models.Model):
             ("menu_sqlanalyze", "菜单 SQL分析"),
             ("menu_query", "菜单 SQL查询"),
             ("menu_sqlquery", "菜单 在线查询"),
-            ("menu_queryapplylist", "菜单 权限管理"),
             ("menu_sqloptimize", "菜单 SQL优化"),
             ("menu_sqladvisor", "菜单 优化工具"),
             ("menu_slowquery", "菜单 慢查日志"),
+            ("menu_account_purview", "菜单 账号权限"),
+            ("menu_db_account_purview", "菜单 DB账号申请"),
+            ("menu_queryapplylist", "菜单 权限管理"),
+            ("menu_group_purview", "菜单 资源组申请"),
             ('menu_instance_monitor', '菜单 实例监控'),
-            ('menu_redis_analysis', '菜单 Redis大Key分析'),
+            ('menu_redis_analysis', '菜单 Redis分析'),
             ('menu_instance_analysis', '菜单 DB实例信息'),
-            ('menu_instance_moniror_info', '菜单 DB监控信息'),
             ("menu_instance", "菜单 实例管理"),
             ("menu_instance_list", "菜单 实例列表"),
             ("menu_dbdiagnostic", "菜单 会话管理"),
@@ -1003,6 +1016,7 @@ class Permission(models.Model):
             ("archive_mgt", "管理归档申请"),
             ("audit_user", "审计权限"),
             ("query_download", "在线查询下载权限"),
+            ("account_review", "账号权限申请"),
         )
 
 
@@ -1305,3 +1319,62 @@ class AuditEntry(models.Model):
         return "{0} - {1} - {2} - {3} - {4}".format(
             self.user_id, self.user_name, self.extra_info, self.action, self.action_time
         )
+
+class ResoueceGroupApply(models.Model, WorkflowAuditMixin):
+    """
+    资源组申请记录表
+    """
+    apply_id = models.AutoField(primary_key=True)
+    group_id = models.IntegerField('组ID')
+    group_name = models.CharField('组名称', max_length=100)
+    title = models.CharField('申请标题', max_length=50)
+    user_name = models.CharField('申请人', max_length=30)
+    user_display = models.CharField('申请人中文名', max_length=50, default='')
+    remark = models.CharField('申请备注', max_length=100)
+    status = models.IntegerField("审核状态", choices=WorkflowStatus.choices)
+    audit_auth_groups = models.CharField("审批权限组列表", max_length=255)
+    create_time = models.DateTimeField(auto_now_add=True)
+    sys_time = models.DateTimeField(auto_now=True)
+
+    def __int__(self):
+        return self.apply_id
+
+    class Meta:
+        managed = True
+        db_table = 'resouece_group_apply'
+        verbose_name = u'资源组申请记录表'
+        verbose_name_plural = u'资源组申请记录表'
+
+
+class AccountApply(models.Model):
+    """
+    账号申请记录表
+    """
+    id = models.AutoField(primary_key=True)
+    group_id = models.IntegerField('组ID')
+    group_name = models.CharField('组名称', max_length=100)
+    title = models.CharField('申请标题', max_length=50)
+    user_name = models.CharField('申请人', max_length=30)
+    user_display = models.CharField('申请人中文名', max_length=50, default='')
+    instance = models.ForeignKey(Instance, on_delete=models.CASCADE)
+    db_list = models.TextField('数据库', default='')  # 逗号分隔的数据库列表
+    table_list = models.TextField('表', default='')  # 逗号分隔的表列表
+    priv_type = models.IntegerField('权限类型', choices=((0, '全局'), (1, 'DATABASE'), (2, 'TABLE'),), default=0)
+    priv = models.IntegerField('申请的数据库权限', choices=((1, '只读'), (2, '增删改查'), (3, '复制')), default=0)
+    account_name = models.CharField('数据库账号名', max_length=12)
+    host = models.CharField('授权主机地址', max_length=100)
+    password = models.CharField('账号密码', max_length=50)
+    note = models.CharField('账号备注', max_length=100)
+    status = models.IntegerField('审核状态', choices=WorkflowStatus.choices)
+    audit_auth_groups = models.CharField('审批权限组列表', max_length=255)
+    create_time = models.DateTimeField(auto_now_add=True)
+    sys_time = models.DateTimeField(auto_now=True)
+
+    def __int__(self):
+        return self.id
+
+    class Meta:
+        managed = True
+        db_table = 'account_apply'
+        verbose_name = u'账号申请记录表'
+        verbose_name_plural = u'账号申请记录表'

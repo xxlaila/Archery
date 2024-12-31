@@ -129,12 +129,6 @@
                                         <a href="/data_dictionary/">数据字典</a>
                                     </li>
                                 {% endif %}
-                                {% if perms.sql.menu_queryapplylist %}
-                                    <li>
-                                        <a href="/queryapplylist/">权限管理</a>
-                                    </li>
-                                {% endif %}
-
                             </ul>
                             <!-- /.nav-second-level -->
                         </li>
@@ -157,23 +151,41 @@
                             <!-- /.nav-second-level -->
                         </li>
                     {% endif %}
+                    {% if perms.sql.menu_account_purview %}
+                        <li>
+                            <a href="#"><i class="fa fa-user-plus fa-fw"></i>账号权限<span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level">
+                                {% if perms.sql.menu_db_account_purview %}
+                                    <li>
+                                        <a href="/accountapplylist/">DB账号申请</a>
+                                    </li>
+                                {% endif %}
+                                {% if perms.sql.menu_queryapplylist %}
+                                    <li>
+                                        <a href="/queryapplylist/">实例权限申请</a>
+                                    </li>
+                                {% endif %}
+                                {% if perms.sql.menu_group_purview %}
+                                    <li>
+                                        <a href="/resourcegroupapply/">资源组申请</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                            <!-- /.nav-second-level -->
+                        </li>
+                    {% endif %}
                     {% if perms.sql.menu_instance_monitor %}
                         <li>
-                            <a href="#"><i class="fa fa-database fa-fw"></i>实例监控<span class="fa arrow"></span></a>
+                            <a href="#"><i class="fa fa-heartbeat fa-fw"></i>实例监控<span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level">
                                 {% if perms.sql.menu_redis_analysis %}
                                     <li>
-                                        <a href="/redis/">Redis大Key分析</a>
+                                        <a href="/redis/">Redis分析</a>
                                     </li>
                                 {% endif %}
-                                {% if perms.sql.menu_instance_info %}
+                                {% if perms.sql.menu_instance_analysis %}
                                     <li>
                                         <a href="/dbanalysis/">DB实例信息</a>
-                                    </li>
-                                {% endif %}
-                                {% if perms.sql.menu_instance_moniror_info %}
-                                    <li>
-                                        <a href="https://grafana.zhenaioa.com/d/Bqhl1qQSz/mysql-teng-xun-yun?orgId=1&var-vip=10.11.5.223&refresh=30s" target="_blank">DB监控信息</a>
                                     </li>
                                 {% endif %}
                             </ul>

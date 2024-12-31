@@ -14,6 +14,8 @@ class WorkflowType(models.IntegerChoices):
     QUERY = 1, "查询权限申请"
     SQL_REVIEW = 2, "SQL上线申请"
     ARCHIVE = 3, "数据归档申请"
+    RESOURCE_GROUP = 4, "资源组申请"
+    ACCOUNT = 5, "数据库账号申请"
 
 
 class WorkflowStatus(models.IntegerChoices):
@@ -76,3 +78,32 @@ class SQLTuning:
         "TMP_TABLE_SIZE",
         "WAIT_TIMEOUT",
     ]
+
+class WorkflowDict:
+    # 工作流申请类型，1.query,2.SQL上线申请
+    workflow_type = {
+        'query': 1,
+        'query_display': '查询权限申请',
+        'sqlreview': 2,
+        'sqlreview_display': 'SQL上线申请',
+        'archive': 3,
+        'archive_display': '数据归档申请',
+        'account': 4,
+        'account_display': '数据库账号申请',
+        'instance': 5,
+        'instance_display': '数据库实例申请',
+        'resource_group': 6,
+        'resource_group_display': '资源组权限申请',
+    }
+
+    # 工作流状态，0.待审核 1.审核通过 2.审核不通过 3.审核取消
+    workflow_status = {
+        'audit_wait': 0,
+        'audit_wait_display': '待审核',
+        'audit_success': 1,
+        'audit_success_display': '审核通过',
+        'audit_reject': 2,
+        'audit_reject_display': '审核不通过',
+        'audit_abort': 3,
+        'audit_abort_display': '审核取消',
+    }
