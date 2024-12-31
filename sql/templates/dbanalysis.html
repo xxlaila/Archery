@@ -109,6 +109,19 @@
                     }, {
                         title: '从实例数',
                         field: 'roinstancesnum'
+                    },{
+                        title: '监控信息',
+                        align: 'center',
+                        formatter: function (value, row, index) {
+                            // 动态生成监控按钮
+                            let url;
+                            if (row.cloud === "Tencent") {
+                                url = `https://grafana.zhenaioa.com/d/Bqhl1qQSz/mysql-teng-xun-yun?orgId=1&refresh=30s&var-vip=${row.ipaddress}`;
+                            } else {
+                                url = `https://grafana.zhenaioa.com/d/wcfuM3QSz/mysql-hua-wei-yun?var-dataVip=${row.ipaddress}&refresh=30s`;
+                            }
+                            return `<button class="btn btn-primary btn-sm monitor-btn" onclick="window.open('${url}', '_blank')">查看监控</button>`;
+                        }
                     }],
                     onLoadSuccess: function (data) {
                         if (data.status !== 0) {
@@ -198,6 +211,19 @@
                     }, {
                         title: '从实例数',
                         field: 'roinstancesnum'
+                    }, {
+                        title: '监控信息',
+                        align: 'center',
+                        formatter: function (value, row, index) {
+                            // 动态生成监控按钮
+                            let url;
+                            if (row.cloud === "Tencent") {
+                                url = `https://grafana.zhenaioa.com/d/4DLSDsVIz/redis?orgId=1&refresh=30s&var-instance_name=${row.instancename}&var-name=`;
+                            } else {
+                                url = `https://grafana.zhenaioa.com/d/4DLSDsVIz/redis?orgId=1&refresh=30s&var-name=${row.instancename}&var-instance_name=`;
+                            }
+                            return `<button class="btn btn-primary btn-sm monitor-btn" onclick="window.open('${url}', '_blank')">查看监控</button>`;
+                        }
                     }],
                     onLoadSuccess: function (data) {
                         if (data.status !== 0) {

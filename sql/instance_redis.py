@@ -95,6 +95,9 @@ def redis_instanceinfo(request):
     row["cpu"] = '1'
     row["memory"] = items["Size"]
     row["roinstancesnum"] = items["RedisReplicasNum"]
+    row['cloud'] = instance_info.cloud
+    row["db_type"] = instance_info.db_type
+
     rows.append(row)
 
     result = {'status': 0, 'msg': 'ok', 'rows': rows}
