@@ -35,7 +35,8 @@ def process(request):
         query_engine = get_engine(instance=instance)
     else:
         query_engine = ''
-        result = {"status": 1, "msg": "腾讯云暂不支持该数据库类型接口", "data": []}
+        # 腾讯云当前不支持获取进程列表
+        result = {"status": 0, "msg": "ok", "rows": {}}
         return HttpResponse(
             json.dumps(result, cls=ExtendJSONEncoderBytes), content_type="application/json"
         )
@@ -48,6 +49,8 @@ def process(request):
             result = {"status": 0, "msg": "ok", "rows": processlist}
         else:
             result = {"status": 1, "msg": query_result.error}
+    else:
+        result = {"status": 0, "msg": "ok", "rows": {}}
 
     # 返回查询结果
     # ExtendJSONEncoderBytes 使用json模块，bigint_as_string只支持simplejson
