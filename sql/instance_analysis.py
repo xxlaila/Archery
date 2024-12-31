@@ -62,6 +62,8 @@ def extract_instanceinfo(instance_name, instancetypes):
             "volume": item.get("Volume", 0),
             "qps": item.get("Qps", 0),
             "roinstancesnum": sum(len(group.get("RoInstances", [])) for group in item.get("RoGroups", [])),
+            "cloud": instance_info.cloud,
+            "db_type": instance_info.db_type
         })
         # 只读实例信息
         for rogroup in item.get("RoGroups", []):
@@ -76,6 +78,8 @@ def extract_instanceinfo(instance_name, instancetypes):
                     "memory": roinstance.get("Memory", 0),
                     "volume": roinstance.get("Volume", 0),
                     "qps": roinstance.get("Qps", 0),
+                    "cloud": instance_info.cloud,
+                    "db_type": instance_info.db_type
                 })
     return rows
 @permission_required('sql.menu_instance_analysis', raise_exception=True)
