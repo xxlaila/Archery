@@ -171,6 +171,7 @@ urlpatterns = [
     path('redis/rediskeysize/', instance_redis.redis_bigkey),
     path('redis/redishotkey/', instance_redis.redis_hotkey),
     path('redis/redis_instanceinfo/', instance_redis.redis_instanceinfo),
+    path('redis/redis_instance_cpu_time/', instance_redis.redis_instance_cpu_time),
     path('dbanalysis/', views.dbanalysis),
     path('dbanalysis/instanceinfo/', instance_analysis.instanceinfo),
 ]

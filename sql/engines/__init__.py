@@ -248,7 +248,7 @@ def get_engine(instance=None):  # pragma: no cover
 
 def get_tencent_dbbrain_engine(instance=None):
     """获取数据库操作engine"""
-    if instance.db_type == "mysql":
+    if instance.db_type == "mysql" or instance.db_type == "redis":
         from sql.models import AliyunRdsConfig
 
         if AliyunRdsConfig.objects.filter(instance=instance, is_enable=True).exists():
@@ -264,7 +264,7 @@ def get_tencent_dbbrain_engine(instance=None):
 
 def get_tencent_cdb_engine(instance=None):
     """获取数据库操作engine"""
-    if instance.db_type == "mysql":
+    if instance.db_type == "mysql" or instance.db_type == "redis":
         from sql.models import AliyunRdsConfig
 
         if AliyunRdsConfig.objects.filter(instance=instance, is_enable=True).exists():

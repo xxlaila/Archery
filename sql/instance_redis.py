@@ -11,11 +11,47 @@ from django.contrib.auth.decorators import permission_required
 from django.http import HttpResponse
 from common.utils.extend_json_encoder import ExtendJSONEncoder
 import time
-from sql.engines import get_tencent_redis
+from sql.engines import get_tencent_redis, get_tencent_dbbrain_engine
 from sql.utils.resource_group import user_instances
 from sql.models import Instance
 
 logger = logging.getLogger(__name__)
+
+
+@permission_required('sql.menu_redis_analysis', raise_exception=True)
+def redis_instance_cpu_time(request):
+    """实例cpu耗时"""
+    instance_name = request.POST.get('instance_name')
+
+    try:
+        user_instances(request.user, db_type=["redis"]).get(instance_name=instance_name)
+    except Exception:
+        result = {"status": 1, "msg": "你所在组未关联该实例", "data": []}
+        return HttpResponse(json.dumps(result), content_type="application/json")
+
+    instance_info = Instance.objects.get(instance_name=instance_name)
+    if instance_info.cloud == "Tencent" and instance_info.db_type == "redis":
+        query_engine = get_tencent_redis(instance=instance_info)
+        instanceinfo_list = query_engine.tencent_api_DescribeInstanceMonitorTopNCmdTook()
+    else:
+        instanceinfo_list = {}
+    # 查询大key
+    if instanceinfo_list:
+        hotkey_list = instanceinfo_list["Data"]
+
+        rows = []
+        for row in hotkey_list:
+            rows.append(row)
+        # 排序
+        rows.sort(key=lambda x: x["Took"], reverse=1)
+        # 取前10行
+        rows = rows[:10]
+    else:
+        rows = []
+    result = {'status': 0, 'msg': 'ok', 'rows': rows}
+    return HttpResponse(json.dumps(result, cls=ExtendJSONEncoder, bigint_as_string=True),
+                        content_type='application/json')
+
 
 @permission_required('sql.menu_redis_analysis', raise_exception=True)
 def redis_instanceinfo(request):
@@ -76,24 +112,24 @@ def redis_bigkey(request):
         result = {"status": 1, "msg": "你所在组未关联该实例", "data": []}
         return HttpResponse(json.dumps(result), content_type="application/json")
 
-    reqtime = time.strftime("%Y%m%d", time.localtime())
+    reqtime = time.strftime("%Y-%m-%d", time.localtime())
     # 通过api查询出实例id
     instance_info = Instance.objects.get(instance_name=instance_name)
     if instance_info.cloud == "Tencent" and instance_info.db_type == "redis":
-        query_engine = get_tencent_redis(instance=instance_info)
-        instanceinfo_list = query_engine.tencent_api_DescribeInstanceMonitorBigKey(reqtime)
+        query_engine = get_tencent_dbbrain_engine(instance=instance_info)
+        instanceinfo_list = query_engine.tencent_api_DescribeRedisTopBigKeys(reqtime)
     else:
         instanceinfo_list = {}
 
-    if instanceinfo_list:
+    if instanceinfo_list["TopKeys"]:
     # 查询大key
-        bigkey_list = instanceinfo_list["Data"]
+        bigkey_list = instanceinfo_list["TopKeys"]
 
         rows = []
         for row in bigkey_list:
             rows.append(row)
         # 排序
-        rows.sort(key=lambda x: x["Size"], reverse=1)
+        rows.sort(key=lambda x: x["Length"], reverse=1)
         # 取前10行
         rows = rows[:10]
     else:

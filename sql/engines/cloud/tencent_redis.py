@@ -5,7 +5,7 @@
 @Author  : xxlaila
 @Software: PyCharm
 """
-
+import types
 import json
 import logging
 from django.core.exceptions import ObjectDoesNotExist
@@ -73,26 +73,6 @@ class TencentRedis:
             logger.error(f"Unexpected error: {e}")
             raise
 
-    def tencent_api_DescribeInstanceMonitorBigKey(self, reqtime):
-        """腾讯云redis 实例大key接口"""
-        try:
-            client = self._create_redis_client()
-            req = models.DescribeInstanceMonitorBigKeyRequest()
-            params = {
-                'InstanceId': self.instanceid.rds_dbinstanceid,
-                'ReqType': 2,
-                'Date': reqtime
-            }
-            req.from_json_string(json.dumps(params))
-            resp = client.DescribeInstanceMonitorBigKey(req)
-            return json.loads(resp.to_json_string())
-        except TencentCloudSDKException as err:
-            logger.error(f"Tencent Cloud SDK Exception: {err}")
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error: {e}")
-            raise
-
     def tencent_api_DescribeInstanceMonitorHotKey(self):
         """腾讯云redis 实例热key接口"""
         try:
@@ -104,6 +84,94 @@ class TencentRedis:
             }
             req.from_json_string(json.dumps(params))
             resp = client.DescribeInstanceMonitorHotKey(req)
+            return json.loads(resp.to_json_string())
+        except TencentCloudSDKException as err:
+            logger.error(f"Tencent Cloud SDK Exception: {err}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+            raise
+
+    def tencent_api_DescribeInstanceMonitorSIP(self):
+        """
+        查询实例访问来源信息
+        :return:
+        """
+        try:
+            client = self._create_redis_client()
+            req = models.DescribeInstanceMonitorSIPRequest()
+            params = {
+                'InstanceId': self.instanceid.rds_dbinstanceid,
+            }
+            req.from_json_string(json.dumps(params))
+            resp = client.DescribeInstanceMonitorSIP(req)
+            return json.loads(resp.to_json_string())
+        except TencentCloudSDKException as err:
+            logger.error(f"Tencent Cloud SDK Exception: {err}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+            raise
+
+    def tencent_api_DescribeInstanceMonitorTookDist(self, reqtime):
+        """
+        查询实例访问的耗时分布
+        :return:
+        """
+        try:
+            client = self._create_redis_client()
+            req = models.DescribeInstanceMonitorTookDistRequest()
+            params = {
+                'InstanceId': self.instanceid.rds_dbinstanceid,
+                "Date": reqtime,
+                "SpanType": 4
+            }
+            req.from_json_string(json.dumps(params))
+            resp = client.DescribeInstanceMonitorTookDist(req)
+            return json.loads(resp.to_json_string())
+        except TencentCloudSDKException as err:
+            logger.error(f"Tencent Cloud SDK Exception: {err}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+            raise
+
+    def tencent_api_DescribeInstanceMonitorTopNCmd(self):
+        """
+        查询实例访问命令
+        :return:
+        """
+        try:
+            client = self._create_redis_client()
+            req = models.DescribeInstanceMonitorTopNCmdRequest()
+            params = {
+                'InstanceId': self.instanceid.rds_dbinstanceid,
+                "SpanType": 4
+            }
+            req.from_json_string(json.dumps(params))
+            resp = client.DescribeInstanceMonitorTopNCmd(req)
+            return json.loads(resp.to_json_string())
+        except TencentCloudSDKException as err:
+            logger.error(f"Tencent Cloud SDK Exception: {err}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+            raise
+
+    def tencent_api_DescribeInstanceMonitorTopNCmdTook(self):
+        """
+        查询实例CPU耗时
+        :return:
+        """
+        try:
+            client = self._create_redis_client()
+            req = models.DescribeInstanceMonitorTopNCmdTookRequest()
+            params = {
+                'InstanceId': self.instanceid.rds_dbinstanceid,
+                "SpanType": 4
+            }
+            req.from_json_string(json.dumps(params))
+            resp = client.DescribeInstanceMonitorTopNCmdTook(req)
             return json.loads(resp.to_json_string())
         except TencentCloudSDKException as err:
             logger.error(f"Tencent Cloud SDK Exception: {err}")

@@ -321,3 +321,28 @@ class TencentDbbrain(MysqlEngine):
             }
             result.append(table_info)
         return result
+
+    def tencent_api_DescribeRedisTopBigKeys(self, reqtime):
+        """
+        查询redis实例大key列表。
+        :param reqtime:
+        :return:
+        """
+        try:
+            client = self._create_dbbrain_client()
+            req = models.DescribeRedisTopBigKeysRequest()
+            params = {
+                "InstanceId": self.instanceid.rds_dbinstanceid,
+                "Limit": self.limit,
+                "Product": "redis",
+                "Date": reqtime
+            }
+            req.from_json_string(json.dumps(params))
+            resp = client.DescribeRedisTopBigKeys(req)
+            return json.loads(resp.to_json_string())
+        except TencentCloudSDKException as err:
+            logger.error(f"Tencent Cloud SDK Exception: {err}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+            raise

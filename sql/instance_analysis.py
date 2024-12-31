@@ -20,40 +20,63 @@ logger = logging.getLogger(__name__)
 def extract_instanceinfo(instance_name, instancetypes):
     """提取实例具体信息"""
 
-    instance_info = Instance.objects.get(instance_name=instance_name)
+    try:
+        instance_info = Instance.objects.get(instance_name=instance_name)
+    except Instance.DoesNotExist:
+        return []
+    except Instance.MultipleObjectsReturned:
+        return []
+
     if instance_info.cloud == "Tencent" and instance_info.db_type == "mysql":
-        query_engine = get_tencent_cdb_engine(instance=instance_info)
-        instanceinfo_list = query_engine.tencent_api_DescribeDBInstances(
-            instancetypes, instance_info.aliyunrdsconfig.rds_dbinstanceid)
+        try:
+            query_engine = get_tencent_cdb_engine(instance=instance_info)
+            instanceinfo_list = query_engine.tencent_api_DescribeDBInstances(
+                instancetypes,
+                instance_info.aliyunrdsconfig.rds_dbinstanceid if hasattr(instance_info, 'aliyunrdsconfig') else None)
+        except Exception as e:
+            # 记录日志并返回空列表
+            print(f"Error calling tencent_api_DescribeDBInstances: {e}")
+            return []
     else:
         instanceinfo_list = {}
 
     rows = []
-    roinstancesnum = 0
-    # 提取需要的信息
-    if instancetypes == 1:
-        instancetype_str = "主库"
-    elif instancetypes == 2:
-        instancetype_str = "灾备"
-    else:
-        instancetype_str = "从库"
-    if instanceinfo_list:
-        for items in instanceinfo_list["Items"]:
-            row = {}
-            row["instancetype"] = instancetype_str
-            row["instancename"] = items["InstanceName"]
-            row["ipaddress"] = items["Vip"]
-            row["version"] = items["EngineVersion"]
-            row["cpu"] = items["Cpu"]
-            row["memory"] = items["Memory"]
-            row["volume"] = items["Volume"]
-            for roitem in items["RoGroups"]:
-                roinstances = roitem['RoInstances']
-                roinstancesnum = roinstancesnum + len(roinstances)
-            row["roinstancesnum"] = roinstancesnum
-            rows.append(row)
-    else:
-        row = {}
+    instancetype_map = {
+        1: "主库",
+        2: "灾备",
+        3: "从库",
+    }
+    instancetype_str = instancetype_map.get(instancetypes, "未知类型")
+    items = instanceinfo_list.get("Items", [])
+    if not items:
+        return rows
+    for item in items:
+        rows.append({
+            "instanceid": item.get("InstanceId", ""),
+            "instancetype": instancetype_str,
+            "instancename": item.get("InstanceName", ""),
+            "ipaddress": item.get("Vip", ""),
+            "version": item.get("EngineVersion", ""),
+            "cpu": item.get("Cpu", 0),
+            "memory": item.get("Memory", 0),
+            "volume": item.get("Volume", 0),
+            "qps": item.get("Qps", 0),
+            "roinstancesnum": sum(len(group.get("RoInstances", [])) for group in item.get("RoGroups", [])),
+        })
+        # 只读实例信息
+        for rogroup in item.get("RoGroups", []):
+            for roinstance in rogroup.get("RoInstances", []):
+                rows.append({
+                    "instanceid": rogroup.get("RoGroupId", ""),
+                    "instancetype": "从库",
+                    "instancename": roinstance.get("InstanceName", ""),
+                    "ipaddress": roinstance.get("Vip", ""),
+                    "version": roinstance.get("EngineVersion", ""),
+                    "cpu": roinstance.get("Cpu", 0),
+                    "memory": roinstance.get("Memory", 0),
+                    "volume": roinstance.get("Volume", 0),
+                    "qps": roinstance.get("Qps", 0),
+                })
     return rows
 @permission_required('sql.menu_instance_analysis', raise_exception=True)
 def instanceinfo(request):
@@ -70,10 +93,11 @@ def instanceinfo(request):
     rows_master = extract_instanceinfo(instance_name, 1)
     rows_slave = extract_instanceinfo(instance_name, 3)
     rows = []
-    rows.extend(rows_master)
-    rows.extend(rows_slave)
-    print("查看行信息", rows)
-
+    if rows_master:
+        rows.extend(rows_master)
+    if rows_slave:
+        rows.extend(rows_slave)
+        print("查看行信息", rows)
     result = {'status': 0, 'msg': 'ok', 'rows': rows}
     return HttpResponse(json.dumps(result, cls=ExtendJSONEncoder, bigint_as_string=True),
                         content_type='application/json')
