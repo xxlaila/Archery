@@ -57,6 +57,8 @@
 ===============
 ```
 python manage.py test -v 3
+
+# 实例跳转grafana 需要修改dbanalysis.html 文件
 ```
 
 依赖清单
