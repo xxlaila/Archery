@@ -960,7 +960,6 @@ class Permission(models.Model):
             ('menu_instance_monitor', '菜单 实例监控'),
             ('menu_redis_analysis', '菜单 Redis大Key分析'),
             ('menu_instance_analysis', '菜单 DB实例信息'),
-            ('menu_instance_moniror_info', '菜单 DB监控信息'),
             ("menu_instance", "菜单 实例管理"),
             ("menu_instance_list", "菜单 实例列表"),
             ("menu_dbdiagnostic", "菜单 会话管理"),
