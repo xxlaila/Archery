@@ -289,6 +289,7 @@ class ExecuteCheckSerializer(serializers.Serializer):
     instance_id = serializers.IntegerField(label="实例id")
     db_name = serializers.CharField(label="数据库名")
     full_sql = serializers.CharField(label="SQL内容")
+    cloud = serializers.CharField(label="云", required=False)
 
     def validate_instance_id(self, instance_id):
         try:
