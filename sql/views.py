@@ -45,8 +45,7 @@ from sql.utils.resource_group import user_groups, user_instances, all_groups
 
 import logging
 
-logger = logging.getLogger("default")
-
+logger = logging.getLogger(__name__)
 
 def index(request):
     index_path_url = SysConfig().get("index_path_url", "sqlworkflow")
@@ -334,6 +333,7 @@ def grouppurviewapply(request):
     user = request.user
     # 获取资源组
     group_list = all_groups()
+    # group_list = group_list.filter(Q(group_id__in=user.groups.all()) | Q(group_id__in=user.resource_groups.all()))
 
     context = {"group_list": group_list, "engines": engine_map}
     return render(request, "resourcegroupapply.html", context)

@@ -295,3 +295,50 @@ def get_tencent_redis(instance=None):
             f"engine {instance.db_type} not enabled or not supported, please contact admin"
         )
     return engine(instance=instance)
+
+def get_huawei_dbbrain_engine(instance=None):
+    """获取数据库操作engine"""
+    if instance.db_type == "mysql" or instance.db_type == "redis":
+        from sql.models import AliyunRdsConfig
+        if AliyunRdsConfig.objects.filter(instance=instance, is_enable=True).exists():
+            from .cloud.huawei_dbbrain import HuaweiDBBrain
+
+            return HuaweiDBBrain(instance=instance)
+    engine = engine_map.get(instance.db_type)
+    if not engine:
+        raise ValueError(
+            f"engine {instance.db_type} not enabled or not supported, please contact admin"
+        )
+    return engine(instance=instance)
+
+def get_huawei_rds_engine(instance=None):
+    """获取数据库操作engine"""
+    if instance.db_type == "mysql" or instance.db_type == "redis":
+        from sql.models import AliyunRdsConfig
+
+        if AliyunRdsConfig.objects.filter(instance=instance, is_enable=True).exists():
+            from .cloud.huawei_rds import HuaweiRDS
+
+            return HuaweiRDS(instance=instance)
+    engine = engine_map.get(instance.db_type)
+    if not engine:
+        raise ValueError(
+            f"engine {instance.db_type} not enabled or not supported, please contact admin"
+        )
+    return engine(instance=instance)
+
+def get_huawei_redis(instance=None):
+    """获取redis操作engine"""
+    if instance.db_type == "redis" and instance.cloud == "Huawei":
+        from sql.models import AliyunRdsConfig
+        if AliyunRdsConfig.objects.filter(instance=instance, is_enable=True).exists():
+            from .cloud.huawei_redis import HuaweiRedis
+
+            return HuaweiRedis(instance=instance)
+
+    engine = engine_map.get(instance.db_type)
+    if not engine:
+        raise ValueError(
+            f"engine {instance.db_type} not enabled or not supported, please contact admin"
+        )
+    return engine(instance=instance)

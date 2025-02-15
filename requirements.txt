@@ -15,7 +15,7 @@ redis==3.5.3
 pyodbc==4.*
 gunicorn==22.0.0
 pyecharts==2.0.4
-aliyun-python-sdk-rds==2.1.1
+aliyun-python-sdk-rds
 cx-Oracle==7.3.0
 supervisor==4.1.0
 phoenixdb==1.2.1
@@ -36,8 +36,8 @@ pyotp==2.6.0
 pillow==10.3.0
 qrcode==7.3.1
 django-environ==0.8.1
-alibabacloud_dysmsapi20170525==2.0.9
-tencentcloud-sdk-python==3.0.1292
+alibabacloud_dysmsapi20170525
+tencentcloud-sdk-python
 mozilla-django-oidc==3.0.0
 django-auth-dingding==0.0.3
 django-cas-ng==4.3.0
@@ -46,4 +46,8 @@ httpx
 OpenAI
 elasticsearch==8.14.0
 opensearch_py==2.6.0
-
+pytz
+huaweicloudsdkcore
+huaweicloudsdkrds
+huaweicloudsdkdas
+huaweicloudsdkdcs

@@ -323,24 +323,20 @@ def resource_group_apply(request):
         group_id=group_id,
         group_name=group_name,
         remark=remark,
-        audit_auth_groups=Audit.settings(group_id, WorkflowDict.workflow_type['resource_group']),
+        audit_auth_groups="",
     )
-    apply_info.save()
-    logger.info(f"创建资源组申请, {apply_info}")
-    # 显式指定 workflow_type
-    # workflow_type = WorkflowType.RESOURCE_GROUP
-    audit_handler = get_auditor(workflow=apply_info, resource_group=group_name, resource_group_id=group_id,
-                                workflow_type=WorkflowType.RESOURCE_GROUP)
-
-    # 处理审核流程
+    audit_handler = get_auditor(workflow=apply_info)
     try:
         with transaction.atomic():
             audit_handler.create_audit()
-    except Exception as e:
+    except AuditException as e:
         logger.error(f"新建审批流失败, {str(e)}")
         result["status"] = 1
         result["msg"] = "新建审批流失败, 请联系管理员"
         return HttpResponse(json.dumps(result), content_type="application/json")
+    # apply_info.save()
+    logger.info(f"创建资源组申请, {apply_info}")
+
     _resource_group_apply_audit_call_back(
         audit_handler.workflow.apply_id, audit_handler.audit.current_status
     )
@@ -349,7 +345,7 @@ def resource_group_apply(request):
         notify_for_audit,
         workflow_audit=audit_handler.audit,
         timeout=60,
-        task_name=f"query-priv-apply-{audit_handler.workflow.apply_id}",
+        task_name=f"resource_group_apply-{audit_handler.workflow.apply_id}",
     )
     return HttpResponse(json.dumps(result), content_type="application/json")
 

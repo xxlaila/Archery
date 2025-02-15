@@ -1,7 +1,12 @@
 # -*- coding: UTF-8 -*-
 
-from sql.models import Users, Instance, ResourceGroup
-
+from sql.models import (
+    Users,
+    Instance,
+    ResourceGroup,
+    WorkflowAuditSetting,
+    ResoueceGroupApply
+)
 
 def user_groups(user):
     """
@@ -12,12 +17,14 @@ def user_groups(user):
     if user.is_superuser:
         group_list = [group for group in ResourceGroup.objects.filter(is_deleted=0)]
     else:
-        group_list = [
-            group
-            for group in Users.objects.get(id=user.id).resource_group.filter(
-                is_deleted=0
-            )
-        ]
+        user_groups = user.groups.exclude(name="Default")
+        if user_groups.exists():
+            group_ids = [group.id for group in user_groups]
+            audit_setting_group_ids = WorkflowAuditSetting.objects.filter(
+                audit_auth_groups__in=group_ids).values_list('group_id', flat=True).distinct()
+            group_list = ResourceGroup.objects.filter(group_id__in=audit_setting_group_ids, is_deleted=0)
+        else:
+            group_list = ResoueceGroupApply.objects.filter(user_name=user.username, is_deleted=0)
     return group_list
 
 def all_groups():

@@ -39,6 +39,11 @@ def slowquery_review(request):
         result = {"status": 1, "msg": "你所在组未关联该实例", "data": []}
         return HttpResponse(json.dumps(result), content_type="application/json")
 
+    # 新增的代码块，用于检查sqltext和db_name是否为None
+    if sqltext is None or db_name is None:
+        result = {"status": 1, "msg": "缺少sql 语句或数据库", "data": []}
+        return HttpResponse(json.dumps(result), content_type="application/json")
+
     # 判断是RDS还是其他实例
     instance_info = Instance.objects.get(instance_name=instance_name)
     if instance_info.cloud == "Aliyun":
@@ -50,7 +55,8 @@ def slowquery_review(request):
         )
     elif instance_info.cloud == "Tencent":
         query_engine = get_tencent_dbbrain_engine(instance=instance_info)
-        result = query_engine.process_slow_log_top_sqls_results()
+        sql_slow_log = query_engine.process_slow_log_top_sqls_results()
+        result = {"total": len(sql_slow_log), "rows": sql_slow_log}
     else:
         limit = offset + limit
         search = request.POST.get("search")
@@ -149,7 +155,8 @@ def slowquery_review_history(request):
         )
     elif instance_info.cloud == "Tencent":
         query_engine = get_tencent_dbbrain_engine(instance=instance_info)
-        result = query_engine.process_describe_slow_logs()
+        sql_slow_record = query_engine.process_describe_slow_logs()
+        result = {"total": len(sql_slow_record), "rows": sql_slow_record}
     else:
         search = request.POST.get("search")
         sortName = str(request.POST.get("sortName"))
@@ -231,6 +238,11 @@ def usersqladvice_review_history(request):
     except Exception:
         result = {"status": 1, "msg": "你所在组未关联该实例", "data": []}
         return HttpResponse(json.dumps(result), content_type="application/json")
+    # 确保sqltext和db_name都不是None且不是空字符串
+    if not sqltext or not db_name:
+        result = {"status": 1, "msg": "缺少sql 语句或数据库", "data": []}
+        return HttpResponse(json.dumps(result), content_type="application/json")
+
     # 判断是RDS还是其他实例
     instance_info = Instance.objects.get(instance_name=instance_name)
     if instance_info.cloud == "Aliyun":
@@ -239,9 +251,10 @@ def usersqladvice_review_history(request):
         result = {}
     elif instance_info.cloud == "Tencent":
         query_engine = get_tencent_dbbrain_engine(instance=instance_info)
-        result = query_engine.process_slow_log_results(
+        sql_slow_record = query_engine.process_slow_log_results(
             db_name, sqltext
         )
+        result = {"total": len(sql_slow_record), "rows": sql_slow_record}
     else:
         # 其他
         result = {}

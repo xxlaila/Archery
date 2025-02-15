@@ -13,7 +13,7 @@ from rest_framework.response import Response
 
 from common.config import SysConfig
 from common.utils.const import WorkflowStatus, WorkflowType, WorkflowAction
-from sql.engines import get_engine
+from sql.engines import get_engine, get_tencent_dbbrain_engine
 from sql.models import (
     SqlWorkflow,
     SqlWorkflowContent,
@@ -64,7 +64,10 @@ class ExecuteCheck(views.APIView):
         # 交给engine进行检测
         try:
             db_name = request.data["db_name"]
-            check_engine = get_engine(instance=instance)
+            if instance.cloud == "Aliyun":
+                check_engine = get_engine(instance=instance)
+            else:
+                check_engine = get_tencent_dbbrain_engine(instance=instance)
             db_name = check_engine.escape_string(db_name)
             check_result = check_engine.execute_check(
                 db_name=db_name, sql=request.data["full_sql"].strip()
