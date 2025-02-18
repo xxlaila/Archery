@@ -1,12 +1,13 @@
 import simplejson as json
 from django.contrib.auth.models import Group
 from django.http import HttpResponse
-
+import logging
 from common.utils.const import WorkflowStatus
 from common.utils.extend_json_encoder import ExtendJSONEncoder, ExtendJSONEncoderFTime
 from sql.models import WorkflowAudit, WorkflowLog
 from sql.utils.resource_group import user_groups
 
+logger = logging.getLogger(__name__)
 
 # 获取审核列表
 def lists(request):

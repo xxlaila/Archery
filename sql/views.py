@@ -588,6 +588,10 @@ def workflowsdetail(request, audit_id):
         return HttpResponseRedirect(
             reverse("sql:archive_detail", args=(audit_detail.workflow_id,))
         )
+    elif audit_detail.workflow_type == WorkflowType.RESOURCE_GROUP:
+        return HttpResponseRedirect(
+            reverse("sql:resourcegroupapply_detail", args=(audit_detail.workflow_id,))
+        )
 
 
 @permission_required("sql.menu_document", raise_exception=True)

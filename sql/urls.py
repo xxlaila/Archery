@@ -184,7 +184,7 @@ urlpatterns = [
     path('resourcegroupapply/list/', resource_group.get_resource_group_apply_list),
     path('resourcegroupapply/group_apply/', resource_group.resource_group_apply),
     path('resourcegroupapply/detail/<int:apply_id>/', resource_group.get_resource_group_apply_detail,
-         name="resourcegroupapply-detail"),
+         name="resourcegroupapply_detail"),
 
     # 账号申请
     path('accountapplylist/', views.accountapplylist),

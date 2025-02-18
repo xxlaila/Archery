@@ -459,4 +459,4 @@ def query_resou_group_audit(request):
         task_name=f"resource-group-audit-{apply_id}",
     )
 
-    return HttpResponseRedirect(reverse("sql:resourcegroupapply-detail", args=(apply_id,)))
+    return HttpResponseRedirect(reverse("sql:resourcegroupapply_detail", args=(apply_id,)))

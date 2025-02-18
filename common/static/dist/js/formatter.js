@@ -6,6 +6,8 @@ workflow_type = {
     'sqlreview_display': 'SQL上线申请',
     'archive': 3,
     'archive_display': '数据归档申请',
+    'resource_group': 4,
+    'resource_group_display': '资源组申请',
 }
 
 // 0.待审核 1.审核通过/等待执行 2.审核不通过 3.审核取消 101执行中，102执行成功，103执行失败
@@ -70,6 +72,9 @@ function workflow_type_formatter(value) {
     }
     else if (value === workflow_type.archive) {
         return workflow_type.archive_display
+    }
+    else if (value === workflow_type.resource_group) {
+        return workflow_type.resource_group_display
     }
     else {
         return '未知状态'
